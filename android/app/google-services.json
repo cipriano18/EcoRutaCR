@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "755850617671",
+    "project_id": "ecorutacr-940a7",
+    "storage_bucket": "ecorutacr-940a7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755850617671:android:99ae28ccef93a196c56262",
+        "android_client_info": {
+          "package_name": "com.example.ecoruta"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBxZLmXdeV5g9HvHTW8XlqPhoWyEifg-jM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

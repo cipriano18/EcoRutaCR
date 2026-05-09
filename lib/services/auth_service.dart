@@ -1,0 +1,302 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecoruta/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Administra autenticación y perfil persistido del usuario en Firebase.
+class AuthService {
+  static const _rememberMeKey = 'auth.remember_me';
+  static const _rememberedEmailKey = 'auth.remembered_email';
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Aplica al arrancar la preferencia local que controla si la sesión se conserva.
+  Future<void> initializeRememberedSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final shouldRemember = prefs.getBool(_rememberMeKey) ?? false;
+
+    if (!shouldRemember && _auth.currentUser != null) {
+      await _auth.signOut();
+    }
+  }
+
+  /// Devuelve la configuración local usada por el checkbox de recordarme.
+  Future<RememberedLoginState> getRememberedLoginState() async {
+    final prefs = await SharedPreferences.getInstance();
+    return RememberedLoginState(
+      rememberMe: prefs.getBool(_rememberMeKey) ?? false,
+      email: (prefs.getString(_rememberedEmailKey) ?? '').trim(),
+    );
+  }
+
+  /// Persiste la preferencia de recordarme y el correo asociado al acceso.
+  Future<void> saveRememberedLogin({
+    required bool rememberMe,
+    required String email,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_rememberMeKey, rememberMe);
+
+    if (rememberMe) {
+      await prefs.setString(_rememberedEmailKey, email.trim());
+      return;
+    }
+
+    await prefs.remove(_rememberedEmailKey);
+  }
+
+  /// Inicia sesión con correo y contraseña normalizados.
+  Future<UserCredential> login({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(
+      email: email.trim(),
+      password: password.trim(),
+    );
+  }
+
+  /// Registra un usuario nuevo y crea su perfil base en Firestore.
+  Future<UserCredential> register({
+    required String fullName,
+    required String email,
+    required String address,
+    required String password,
+    required int avatarId,
+    required String favoriteActivity,
+  }) async {
+    final userCredential = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password.trim(),
+    );
+
+    final user = userCredential.user;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No se pudo crear el usuario',
+      );
+    }
+
+    await _firestore.collection('users').doc(user.uid).set({
+      'uid': user.uid,
+      'email': email.trim(),
+      'fullName': fullName.trim(),
+      'address': address.trim(),
+      'avatarId': avatarId,
+      'favoriteActivity': favoriteActivity.trim(),
+      'completed_routes': 0,
+      'km_counter': 0,
+      'streak_started_at': null,
+      'streak_deadline_at': null,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    return userCredential;
+  }
+
+  /// Obtiene el documento crudo de un usuario por UID.
+  Future<Map<String, dynamic>?> getUserData(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    return doc.data();
+  }
+
+  /// Recupera y normaliza el perfil del usuario autenticado.
+  Future<UserModel?> getCurrentUserProfile() async {
+    final user = _auth.currentUser;
+
+    if (user == null) return null;
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+
+    if (!doc.exists || doc.data() == null) return null;
+
+    final data = Map<String, dynamic>.from(doc.data()!);
+    final syncedData = await _resetExpiredStreakIfNeeded(
+      uid: user.uid,
+      data: data,
+    );
+    return UserModel.fromMap(syncedData);
+  }
+
+  /// Actualiza únicamente el avatar elegido por el usuario.
+  Future<void> updateAvatar(int avatarId) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'avatarId': avatarId,
+    });
+  }
+
+  /// Actualiza los campos editables del perfil.
+  Future<void> updateProfile({
+    required String fullName,
+    required String address,
+    required String favoriteActivity,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'fullName': fullName.trim(),
+      'address': address.trim(),
+      'favoriteActivity': favoriteActivity.trim(),
+    });
+  }
+
+  /// Reautentica al usuario antes de cambiar su contraseña.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final user = _auth.currentUser;
+
+    if (user == null || user.email == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword.trim(),
+    );
+
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword.trim());
+  }
+
+  /// Elimina la cuenta autenticada y hace rollback del perfil si falla Auth.
+  Future<void> deleteCurrentAccount({required String currentPassword}) async {
+    final user = _auth.currentUser;
+
+    if (user == null || user.email == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
+
+    final uid = user.uid;
+    final normalizedPassword = currentPassword.trim();
+
+    if (normalizedPassword.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-password',
+        message: 'Debes confirmar tu contraseña actual',
+      );
+    }
+
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: normalizedPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+
+    final userDocRef = _firestore.collection('users').doc(uid);
+    final userDocSnapshot = await userDocRef.get();
+    final backupData = userDocSnapshot.data();
+
+    await userDocRef.delete();
+
+    try {
+      await user.delete();
+    } catch (e) {
+      if (backupData != null) {
+        await userDocRef.set(backupData);
+      }
+      rethrow;
+    }
+  }
+
+  /// Registra el cumplimiento semanal de una ruta para mantener la racha.
+  Future<UserModel?> registerWeeklyRouteCompletion() async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
+
+    final userDoc = _firestore.collection('users').doc(user.uid);
+    final snapshot = await userDoc.get();
+    final data = Map<String, dynamic>.from(snapshot.data() ?? {});
+    final now = DateTime.now();
+
+    final startedAt = _readDate(data['streak_started_at']);
+    final deadlineAt = _readDate(data['streak_deadline_at']);
+    final hasActiveStreak = deadlineAt != null && !deadlineAt.isBefore(now);
+    final nextDeadline = now.add(const Duration(days: 7));
+
+    await userDoc.set({
+      'streak_started_at': hasActiveStreak ? startedAt ?? now : now,
+      'streak_deadline_at': nextDeadline,
+    }, SetOptions(merge: true));
+
+    final refreshed = await userDoc.get();
+    if (!refreshed.exists || refreshed.data() == null) return null;
+    return UserModel.fromMap(refreshed.data()!);
+  }
+
+  Future<Map<String, dynamic>> _resetExpiredStreakIfNeeded({
+    required String uid,
+    required Map<String, dynamic> data,
+  }) async {
+    final deadlineAt = _readDate(data['streak_deadline_at']);
+    if (deadlineAt == null || !deadlineAt.isBefore(DateTime.now())) {
+      return data;
+    }
+
+    await _firestore.collection('users').doc(uid).set({
+      'streak_started_at': null,
+      'streak_deadline_at': null,
+    }, SetOptions(merge: true));
+
+    final normalized = Map<String, dynamic>.from(data);
+    normalized['streak_started_at'] = null;
+    normalized['streak_deadline_at'] = null;
+    return normalized;
+  }
+
+  DateTime? _readDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
+  /// Cierra la sesión activa en Firebase Auth.
+  Future<void> logout({bool clearRememberedLogin = true}) async {
+    await _auth.signOut();
+    if (clearRememberedLogin) {
+      await saveRememberedLogin(rememberMe: false, email: '');
+    }
+  }
+}
+
+/// Estado local usado para precargar el formulario de inicio de sesión.
+class RememberedLoginState {
+  const RememberedLoginState({required this.rememberMe, required this.email});
+
+  final bool rememberMe;
+  final String email;
+}
