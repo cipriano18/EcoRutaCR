@@ -3,6 +3,10 @@ import 'package:provider/provider.dart';
 
 import '../../providers/admin_session_provider.dart';
 import '../../services/admin_auth_service.dart';
+import 'home/dashboard_home_section.dart';
+import 'public_routes/public_routes_management_section.dart';
+import 'reports/dashboard_reports_section.dart';
+import 'statistics/dashboard_statistics_section.dart';
 import '../../widgets/sponsor_registration_form.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -13,15 +17,90 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  static const String homeSectionId = 'home';
+  static const String statisticsSectionId = 'statistics';
+  static const String reportsSectionId = 'reports';
+  static const String publicRoutesManagementSectionId = 'public-routes-management';
   static const String sponsorsSectionId = 'sponsors';
   static const String clientsSectionId = 'clients';
   static const String adminsSectionId = 'admins';
+
+  static const String reportUsersSubsectionId = 'report-users';
+  static const String reportSponsorsSubsectionId = 'report-sponsors';
+  static const String reportAdsSubsectionId = 'report-ads';
+  static const String reportActivitySubsectionId = 'report-activity';
+  static const String reportRoutesSubsectionId = 'report-routes';
 
   static const String sponsorRegisterSubsectionId = 'sponsor-register';
   static const String sponsorAdsSubsectionId = 'sponsor-ads';
   static const String sponsorMapSubsectionId = 'sponsor-map';
 
   late final List<_AdminSection> _sections = [
+    const _AdminSection(
+      id: homeSectionId,
+      title: 'Inicio',
+      icon: Icons.space_dashboard_outlined,
+      summary:
+          'Vista principal del panel con indicadores generales, estado operativo y actividad reciente.',
+    ),
+    const _AdminSection(
+      id: statisticsSectionId,
+      title: 'Estadisticas',
+      icon: Icons.bar_chart_rounded,
+      summary:
+          'Vista analitica con graficos administrativos y comparativos operativos del sistema.',
+    ),
+    const _AdminSection(
+      id: reportsSectionId,
+      title: 'Reportes',
+      icon: Icons.assessment_outlined,
+      summary:
+          'Modulo visual para seguimiento institucional, tablas administrativas y reportes simulados del ecosistema.',
+      subsections: [
+        _AdminSubsection(
+          id: reportUsersSubsectionId,
+          title: 'Reporte de usuarios',
+          description:
+              'Seguimiento de usuarios registrados, activos, crecimiento y ultimos movimientos.',
+          icon: Icons.people_alt_outlined,
+        ),
+        _AdminSubsection(
+          id: reportSponsorsSubsectionId,
+          title: 'Reporte de patrocinadores',
+          description:
+              'Vista comercial de patrocinadores activos, categorias y campanas vigentes.',
+          icon: Icons.handshake_outlined,
+        ),
+        _AdminSubsection(
+          id: reportAdsSubsectionId,
+          title: 'Reporte de publicidades',
+          description:
+              'Control visual de publicidades activas, pausadas, vencidas y su rendimiento.',
+          icon: Icons.ads_click_outlined,
+        ),
+        _AdminSubsection(
+          id: reportActivitySubsectionId,
+          title: 'Reporte de actividad',
+          description:
+              'Monitoreo de eventos recientes, trazabilidad administrativa y actividad del panel.',
+          icon: Icons.timeline_outlined,
+        ),
+        _AdminSubsection(
+          id: reportRoutesSubsectionId,
+          title: 'Reporte de rutas publicas',
+          description:
+              'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geografica.',
+          icon: Icons.route_outlined,
+        ),
+      ],
+    ),
+    const _AdminSection(
+      id: publicRoutesManagementSectionId,
+      title: 'Gestion de rutas publicas',
+      icon: Icons.alt_route_rounded,
+      summary:
+          'Administracion visual de rutas publicas creadas desde la app movil con filtros, edicion simple y eliminacion controlada.',
+    ),
     const _AdminSection(
       id: sponsorsSectionId,
       title: 'Manejo de patrocinadores',
@@ -68,7 +147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
   ];
 
-  String _selectedSectionId = sponsorsSectionId;
+  String _selectedSectionId = homeSectionId;
   String _selectedSubsectionId = sponsorRegisterSubsectionId;
 
   @override
@@ -497,6 +576,18 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (section.id == _DashboardScreenState.homeSectionId) {
+      return const DashboardHomeSection();
+    }
+
+    if (section.id == _DashboardScreenState.statisticsSectionId) {
+      return const DashboardStatisticsSection();
+    }
+
+    if (section.id == _DashboardScreenState.publicRoutesManagementSectionId) {
+      return const PublicRoutesManagementSection();
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(4),
@@ -523,6 +614,10 @@ class _DashboardContent extends StatelessWidget {
   }
 
   Widget _buildSectionBody(BuildContext context) {
+    if (section.id == _DashboardScreenState.reportsSectionId) {
+      return _ReportsModule(subsection: subsection);
+    }
+
     if (section.id == _DashboardScreenState.sponsorsSectionId) {
       return _SponsorsModule(subsection: subsection);
     }
@@ -552,6 +647,41 @@ class _DashboardContent extends StatelessWidget {
         'Registro de cambios y auditoria',
       ],
     );
+  }
+}
+
+class _ReportsModule extends StatelessWidget {
+  const _ReportsModule({required this.subsection});
+
+  final _AdminSubsection? subsection;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentId = subsection?.id;
+
+    if (currentId == _DashboardScreenState.reportSponsorsSubsectionId) {
+      return const DashboardReportsSection(
+        reportType: DashboardReportType.sponsors,
+      );
+    }
+
+    if (currentId == _DashboardScreenState.reportAdsSubsectionId) {
+      return const DashboardReportsSection(reportType: DashboardReportType.ads);
+    }
+
+    if (currentId == _DashboardScreenState.reportActivitySubsectionId) {
+      return const DashboardReportsSection(
+        reportType: DashboardReportType.activity,
+      );
+    }
+
+    if (currentId == _DashboardScreenState.reportRoutesSubsectionId) {
+      return const DashboardReportsSection(
+        reportType: DashboardReportType.publicRoutes,
+      );
+    }
+
+    return const DashboardReportsSection(reportType: DashboardReportType.users);
   }
 }
 
