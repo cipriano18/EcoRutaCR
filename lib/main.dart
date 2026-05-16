@@ -1,7 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import 'services/client_service.dart';
 import 'firebase_options.dart';
 import 'navigation/auth_gate.dart';
 import 'providers/admin_session_provider.dart';
@@ -9,6 +9,7 @@ import 'routes/app_routes.dart';
 import 'services/admin_auth_service.dart';
 import 'theme/app_theme.dart';
 import 'services/admin_service.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -33,11 +34,14 @@ class EcoRutaAdminApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider(create: (_) => AdminAuthService()),
+
         ChangeNotifierProvider(create: (_) => AdminSessionProvider()),
-        Provider(
-  create: (_) => AdminService(),
-),
+
+        Provider(create: (_) => AdminService()),
+
+        Provider(create: (_) => ClientService()),
       ],
+
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'EcoRuta Admin',

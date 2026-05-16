@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
+import '../../widgets/client_list_module.dart';
 import '../../providers/admin_session_provider.dart';
 import '../../services/admin_auth_service.dart';
 import 'home/dashboard_home_section.dart';
@@ -8,7 +8,8 @@ import 'public_routes/public_routes_management_section.dart';
 import 'reports/dashboard_reports_section.dart';
 import 'statistics/dashboard_statistics_section.dart';
 import '../../widgets/sponsor_registration_form.dart';
-
+import '../../widgets/admin_list_module.dart';
+import '../../widgets/current_admin_profile_dialog.dart';
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -20,7 +21,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const String homeSectionId = 'home';
   static const String statisticsSectionId = 'statistics';
   static const String reportsSectionId = 'reports';
-  static const String publicRoutesManagementSectionId = 'public-routes-management';
+  static const String publicRoutesManagementSectionId =
+      'public-routes-management';
   static const String sponsorsSectionId = 'sponsors';
   static const String clientsSectionId = 'clients';
   static const String adminsSectionId = 'admins';
@@ -321,7 +323,6 @@ class _DashboardHeader extends StatelessWidget {
     );
   }
 }
-
 class _SidebarCard extends StatelessWidget {
   const _SidebarCard({
     this.fillHeight = false,
@@ -361,9 +362,9 @@ class _SidebarCard extends StatelessWidget {
           Text(
             'Navegacion del panel',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
           const SizedBox(height: 16),
           if (fillHeight)
@@ -404,57 +405,72 @@ class _SidebarCard extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1B4332),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFFC1ECD4),
-                  child: Icon(
-                    Icons.person_outline_rounded,
-                    color: Color(0xFF012D1D),
-                  ),
+          InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (_) => CurrentAdminProfileDialog(
+                  initialName: adminName,
+                  initialEmail: adminEmail,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        adminName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        adminRole.toUpperCase(),
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: const Color(0xFFA5D0B9),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        adminEmail,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFFC1ECD4),
-                        ),
-                      ),
-                    ],
+              );
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B4332),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Color(0xFFC1ECD4),
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      color: Color(0xFF012D1D),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          adminName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          adminRole.toUpperCase(),
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: const Color(0xFFA5D0B9),
+                                  ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          adminEmail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFFC1ECD4),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -462,7 +478,6 @@ class _SidebarCard extends StatelessWidget {
     );
   }
 }
-
 class _SidebarSectionTile extends StatelessWidget {
   const _SidebarSectionTile({
     required this.section,
@@ -613,41 +628,33 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionBody(BuildContext context) {
-    if (section.id == _DashboardScreenState.reportsSectionId) {
-      return _ReportsModule(subsection: subsection);
-    }
-
-    if (section.id == _DashboardScreenState.sponsorsSectionId) {
-      return _SponsorsModule(subsection: subsection);
-    }
-
-    if (section.id == _DashboardScreenState.clientsSectionId) {
-      return const _ModulePlaceholder(
-        title: 'Gestion de clientes',
-        description:
-            'Aqui vivira la administracion de clientes del proyecto, con consultas, filtros y acciones sobre perfiles.',
-        accentColor: Color(0xFF4EAC7F),
-        bullets: [
-          'Listado general de clientes',
-          'Busqueda y filtros por actividad',
-          'Vista de detalle para seguimiento',
-        ],
-      );
-    }
-
-    return const _ModulePlaceholder(
-      title: 'Gestion de administradores',
-      description:
-          'Esta seccion concentrara la gestion interna del equipo, permisos y crecimiento del panel administrativo.',
-      accentColor: Color(0xFFFF7043),
-      bullets: [
-        'Lista de administradores activos',
-        'Roles y niveles de acceso',
-        'Registro de cambios y auditoria',
-      ],
-    );
+Widget _buildSectionBody(BuildContext context) {
+  if (section.id == _DashboardScreenState.reportsSectionId) {
+    return _ReportsModule(subsection: subsection);
   }
+
+  if (section.id == _DashboardScreenState.sponsorsSectionId) {
+    return _SponsorsModule(subsection: subsection);
+  }
+
+  if (section.id == _DashboardScreenState.adminsSectionId) {
+    return const AdminListModule();
+  }
+
+ if (section.id == _DashboardScreenState.clientsSectionId) {
+  return const ClientListModule();
+}
+
+  return const _ModulePlaceholder(
+    title: 'Modulo no disponible',
+    description:
+        'Esta seccion todavia no tiene contenido asignado.',
+    accentColor: Color(0xFFFF7043),
+    bullets: [
+      'Contenido pendiente',
+    ],
+  );
+}
 }
 
 class _ReportsModule extends StatelessWidget {
