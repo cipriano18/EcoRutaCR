@@ -8,7 +8,7 @@ import 'providers/admin_session_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/admin_auth_service.dart';
 import 'theme/app_theme.dart';
-
+import 'services/admin_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -34,6 +34,9 @@ class EcoRutaAdminApp extends StatelessWidget {
       providers: [
         Provider(create: (_) => AdminAuthService()),
         ChangeNotifierProvider(create: (_) => AdminSessionProvider()),
+        Provider(
+  create: (_) => AdminService(),
+),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
