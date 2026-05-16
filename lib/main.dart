@@ -1,50 +1,90 @@
-import 'package:ecoruta/firebase_options.dart';
-import 'package:ecoruta/providers/user_provider.dart';
-import 'package:ecoruta/services/auth_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'firebase_options.dart';
+import 'navigation/auth_gate.dart';
+import 'providers/admin_session_provider.dart';
 import 'routes/app_routes.dart';
+import 'services/admin_auth_service.dart';
+import 'theme/app_theme.dart';
 
-/// Inicializa Firebase y registra los providers globales de la app.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await AuthService().initializeRememberedSession();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  runApp(
-    MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => UserProvider())],
-      child: const EcoRutaApp(),
-    ),
-  );
+    runApp(const EcoRutaAdminApp());
+  } catch (error) {
+    runApp(
+      StartupErrorApp(message: 'No se pudo inicializar Firebase.\n$error'),
+    );
+  }
 }
 
-/// Widget raíz encargado de configurar tema y navegación principal.
-class EcoRutaApp extends StatelessWidget {
-  const EcoRutaApp({super.key});
+class EcoRutaAdminApp extends StatelessWidget {
+  const EcoRutaAdminApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
+      providers: [
+        Provider(create: (_) => AdminAuthService()),
+        ChangeNotifierProvider(create: (_) => AdminSessionProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'EcoRuta Admin',
+        theme: AppTheme.lightTheme,
+        initialRoute: AppRoutes.root,
+        routes: AppRoutes.routes,
+        onUnknownRoute: (_) =>
+            MaterialPageRoute<void>(builder: (_) => AuthGate()),
+      ),
+    );
+  }
+}
+
+class StartupErrorApp extends StatelessWidget {
+  const StartupErrorApp({required this.message, super.key});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'EcoRuta',
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF012D1D),
-          brightness: Brightness.light,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 56,
+                    color: Colors.redAccent,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Error de arranque',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(message, textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
         ),
-        fontFamily: 'Arial',
       ),
-      initialRoute: AppRoutes.home,
-
-      //initialRoute: AppRoutes.overpassTest,
-      routes: AppRoutes.routes,
     );
   }
 }
-

@@ -1,13 +1,11 @@
-import 'package:ecoruta/models/user_model.dart';
-import 'package:ecoruta/providers/user_provider.dart';
-import 'package:ecoruta/routes/app_routes.dart';
-import 'package:ecoruta/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// Pantalla de acceso que autentica al usuario y restablece su sesión local.
+import '../../providers/admin_session_provider.dart';
+import '../../services/admin_auth_service.dart';
+import '../../widgets/auth_card.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,441 +14,278 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService();
+  final _loginFormKey = GlobalKey<FormState>(debugLabel: 'admin-login-form');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  bool obscurePassword = true;
-  bool rememberMe = false;
-  bool isLoading = false;
-
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _statusMessage;
 
   @override
-  void initState() {
-    super.initState();
-    _loadRememberedLogin();
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  /// Recupera la preferencia local para precargar el formulario.
-  Future<void> _loadRememberedLogin() async {
-    final remembered = await _authService.getRememberedLoginState();
-    if (!mounted) return;
-
-    setState(() {
-      rememberMe = remembered.rememberMe;
-      if (remembered.email.isNotEmpty) {
-        emailController.text = remembered.email;
-      }
-    });
-  }
-
-  /// Valida el formulario, autentica al usuario y carga su perfil en memoria.
-  Future<void> loginUser() async {
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingrese correo y contraseña')),
-      );
+  Future<void> _login() async {
+    if (!_loginFormKey.currentState!.validate()) {
       return;
     }
 
     setState(() {
-      isLoading = true;
+      _isSubmitting = true;
+      _statusMessage = null;
     });
 
+    final authService = context.read<AdminAuthService>();
+    final session = context.read<AdminSessionProvider>();
+
     try {
-      final userCredential = await _authService.login(
-        email: email,
-        password: password,
+      session.clearError();
+      await authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
       );
-      await _authService.saveRememberedLogin(
-        rememberMe: rememberMe,
-        email: email,
-      );
-
-      final uid = userCredential.user!.uid;
-
-      final data = await _authService.getUserData(uid);
-
-      if (data != null) {
-        final userModel = UserModel.fromMap(data);
-
-        if (!mounted) return;
-
-        Provider.of<UserProvider>(context, listen: false).setUser(userModel);
-      }
-
-      if (!mounted) return;
-
-      Navigator.pushReplacementNamed(context, AppRoutes.shell);
-    } on FirebaseAuthException catch (e) {
-      String mensaje = 'Error al iniciar sesion';
-
-      if (e.code == 'user-not-found') {
-        mensaje = 'No existe un usuario con ese correo';
-      } else if (e.code == 'wrong-password') {
-        mensaje = 'Contraseña incorrecta';
-      } else if (e.code == 'invalid-email') {
-        mensaje = 'Correo invalido';
-      } else if (e.code == 'invalid-credential') {
-        mensaje = 'Correo o contraseña incorrectos';
-      }
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(mensaje)));
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
+    } on FirebaseAuthException catch (error) {
+      setState(() {
+        _statusMessage = error.message ?? 'No se pudo iniciar sesion.';
+      });
     } finally {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isSubmitting = false;
         });
       }
     }
   }
 
   @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF012D1D);
-    const orangeColor = Color(0xFFFF7043);
-    const surfaceColor = Color(0xFFEDEEEF);
-    const softTextColor = Color(0xFF414844);
-    const accentLabelColor = Color(0xFFFFB59F);
+    final session = context.watch<AdminSessionProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        foregroundColor: primaryColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          'Iniciar Sesion',
-          style: TextStyle(fontWeight: FontWeight.w700, color: primaryColor),
-        ),
-        centerTitle: false,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                'UNETE A LA EXPEDICION',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.8,
-                  color: accentLabelColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Bienvenido de nuevo',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                  color: primaryColor,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Ingresa tus credenciales para continuar tu aventura.',
-                style: TextStyle(fontSize: 14, color: softTextColor),
-              ),
-              const SizedBox(height: 32),
-              _buildLabel('Correo electronico'),
-              _buildInputField(
-                controller: emailController,
-                hint: 'usuario@correo.com',
-                icon: Icons.email_outlined,
-              ),
-              const SizedBox(height: 18),
-              _buildLabel('Contraseña'),
-              TextField(
-                controller: passwordController,
-                obscureText: obscurePassword,
-                decoration: InputDecoration(
-                  hintText: '••••••••',
-                  hintStyle: const TextStyle(color: Colors.black38),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        obscurePassword = !obscurePassword;
-                      });
-                    },
-                  ),
-                  filled: true,
-                  fillColor: surfaceColor,
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(8),
-                      onTap: () {
-                        setState(() {
-                          rememberMe = !rememberMe;
-                        });
-                      },
-                      child: Row(
-                        children: [
-                          Checkbox(
-                            value: rememberMe,
-                            activeColor: primaryColor,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                rememberMe = value ?? false;
-                              });
-                            },
-                          ),
-                          const Expanded(
-                            child: Text(
-                              'Recordarme',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: softTextColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      'Olvidaste tu contraseña?',
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 58,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: orangeColor,
-                    foregroundColor: Colors.white,
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: isLoading ? null : loginUser,
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
-                        )
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        color: const Color(0xFFF8F9FA),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final useColumn = constraints.maxWidth < 980;
+                  final children = [
+                    Flexible(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 430),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'Entrar',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              'Gestiona EcoRutaCR con una experiencia clara.',
+                              style: Theme.of(context).textTheme.headlineLarge,
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward),
+                            const SizedBox(height: 18),
+                            Text(
+                              'Inicia sesion con tu cuenta administrativa para entrar al panel interno y trabajar sobre Firestore sin salir de la identidad visual de EcoRuta.',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            const SizedBox(height: 28),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              children: const [
+                                _InfoPill(
+                                  icon: Icons.forest_outlined,
+                                  label: 'Misma base Firestore',
+                                ),
+                                _InfoPill(
+                                  icon: Icons.admin_panel_settings_outlined,
+                                  label: 'Acceso solo para admins',
+                                ),
+                                _InfoPill(
+                                  icon: Icons.handshake_outlined,
+                                  label: 'Gestion de patrocinadores',
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Row(
-                children: [
-                  Expanded(child: Divider()),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'o continua con',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black54,
-                        letterSpacing: 1.2,
                       ),
                     ),
-                  ),
-                  Expanded(child: Divider()),
-                ],
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        alignment: Alignment.center,
-                        child: const FaIcon(
-                          FontAwesomeIcons.google,
-                          size: 18,
-                          color: Color(0xFF4285F4),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Google',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 22),
-              Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  children: [
-                    const Text(
-                      'No tienes una cuenta? ',
-                      style: TextStyle(fontSize: 14, color: softTextColor),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/register');
-                      },
-                      child: const Text(
-                        'Registrate gratis',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: orangeColor,
+                    Flexible(
+                      child: AuthCard(
+                        title: 'Iniciar sesion',
+                        subtitle:
+                            'Usa tus credenciales administrativas para acceder al dashboard.',
+                        child: Form(
+                          key: _loginFormKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'CORREO ELECTRONICO',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _emailController,
+                                autofillHints: const [AutofillHints.username],
+                                decoration: const InputDecoration(
+                                  hintText: 'Ingresa tu correo',
+                                  prefixIcon: Icon(
+                                    Icons.alternate_email_rounded,
+                                  ),
+                                ),
+                                validator: _validateEmail,
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                'CONTRASENIA',
+                                style: Theme.of(context).textTheme.labelLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: true,
+                                autofillHints: const [AutofillHints.password],
+                                decoration: const InputDecoration(
+                                  hintText: 'Ingresa tu contrasenia',
+                                  prefixIcon: Icon(Icons.lock_outline_rounded),
+                                ),
+                                validator: _validatePassword,
+                              ),
+                              const SizedBox(height: 24),
+                              FilledButton(
+                                onPressed: _isSubmitting ? null : _login,
+                                child: Text(
+                                  _isSubmitting
+                                      ? 'Ingresando...'
+                                      : 'Entrar al panel',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _StatusMessage(
+                                message: _statusMessage ?? session.errorMessage,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ];
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1180),
+                    child: Flex(
+                      direction: useColumn ? Axis.vertical : Axis.horizontal,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: useColumn
+                          ? CrossAxisAlignment.stretch
+                          : CrossAxisAlignment.center,
+                      children: [
+                        children.first,
+                        SizedBox(
+                          width: useColumn ? 0 : 36,
+                          height: useColumn ? 32 : 0,
+                        ),
+                        children.last,
+                      ],
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 36),
-              const Center(
-                child: Text(
-                  '© 2026 EcoRuta Digital Cartography\n\nExplorando las rutas más espectaculares de Costa Rica.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    height: 1.6,
-                    color: Colors.black45,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  /// Mantiene el estilo de etiquetas auxiliares usado por el formulario.
-  Widget _buildLabel(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+  String? _validateEmail(String? value) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return 'Ingresa un correo electronico.';
+    }
+
+    if (!normalized.contains('@')) {
+      return 'Ingresa un correo valido.';
+    }
+
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return 'Ingresa una contrasenia.';
+    }
+
+    if (normalized.length < 8) {
+      return 'La contrasenia debe tener al menos 8 caracteres.';
+    }
+
+    return null;
+  }
+}
+
+class _StatusMessage extends StatelessWidget {
+  const _StatusMessage({required this.message});
+
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    if (message == null || message!.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC1ECD4),
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Text(
-        text.toUpperCase(),
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.1,
-          color: Color(0xFF012D1D),
+        message!,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: const Color(0xFF012D1D),
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
   }
+}
 
-  /// Crea campos de entrada consistentes para los datos básicos del login.
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.emailAddress,
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black38),
-        prefixIcon: Icon(icon),
-        filled: true,
-        fillColor: const Color(0xFFEDEEEF),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 18,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE7E8E9)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF2C694E)),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: const Color(0xFF012D1D),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

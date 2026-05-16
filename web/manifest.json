@@ -1,6 +1,6 @@
 {
-    "name": "ecoruta",
-    "short_name": "ecoruta",
+    "name": "ecorutacr_admin_web",
+    "short_name": "ecorutacr_admin_web",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
