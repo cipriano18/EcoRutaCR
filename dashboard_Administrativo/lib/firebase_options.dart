@@ -1,0 +1,76 @@
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        return macos;
+      case TargetPlatform.windows:
+        return windows;
+      case TargetPlatform.linux:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions no esta configurado para Linux.',
+        );
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions no soporta esta plataforma.',
+        );
+    }
+  }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyAf--HSJj0iEeJ3TGr8Lmg3USbBj_3C7z0',
+    appId: '1:755850617671:web:4d2f9ee9e501da8dc56262',
+    messagingSenderId: '755850617671',
+    projectId: 'ecorutacr-940a7',
+    authDomain: 'ecorutacr-940a7.firebaseapp.com',
+    storageBucket: 'ecorutacr-940a7.firebasestorage.app',
+    measurementId: 'G-3PFECE5RE5',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyBxZLmXdeV5g9HvHTW8XlqPhoWyEifg-jM',
+    appId: '1:755850617671:android:99ae28ccef93a196c56262',
+    messagingSenderId: '755850617671',
+    projectId: 'ecorutacr-940a7',
+    storageBucket: 'ecorutacr-940a7.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCDh5_cuX97XNcUyI557Yzuk1a4GKR43xI',
+    appId: '1:755850617671:ios:53ee27f004cdb2a4c56262',
+    messagingSenderId: '755850617671',
+    projectId: 'ecorutacr-940a7',
+    storageBucket: 'ecorutacr-940a7.firebasestorage.app',
+    iosBundleId: 'com.example.lab2Moviles',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyCDh5_cuX97XNcUyI557Yzuk1a4GKR43xI',
+    appId: '1:755850617671:ios:53ee27f004cdb2a4c56262',
+    messagingSenderId: '755850617671',
+    projectId: 'ecorutacr-940a7',
+    storageBucket: 'ecorutacr-940a7.firebasestorage.app',
+    iosBundleId: 'com.example.lab2Moviles',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyAf--HSJj0iEeJ3TGr8Lmg3USbBj_3C7z0',
+    appId: '1:755850617671:web:359337123fa998b4c56262',
+    messagingSenderId: '755850617671',
+    projectId: 'ecorutacr-940a7',
+    authDomain: 'ecorutacr-940a7.firebaseapp.com',
+    storageBucket: 'ecorutacr-940a7.firebasestorage.app',
+    measurementId: 'G-6RE6RE4GMK',
+  );
+}
