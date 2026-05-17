@@ -5,6 +5,7 @@ import 'services/client_service.dart';
 import 'firebase_options.dart';
 import 'navigation/auth_gate.dart';
 import 'providers/admin_session_provider.dart';
+import 'providers/theme_mode_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/admin_auth_service.dart';
 import 'theme/app_theme.dart';
@@ -40,16 +41,22 @@ class EcoRutaAdminApp extends StatelessWidget {
         Provider(create: (_) => AdminService()),
 
         Provider(create: (_) => ClientService()),
+
+        ChangeNotifierProvider(create: (_) => ThemeModeProvider()),
       ],
 
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'EcoRuta Admin',
-        theme: AppTheme.lightTheme,
-        initialRoute: AppRoutes.root,
-        routes: AppRoutes.routes,
-        onUnknownRoute: (_) =>
-            MaterialPageRoute<void>(builder: (_) => AuthGate()),
+      child: Consumer<ThemeModeProvider>(
+        builder: (context, themeModeProvider, child) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'EcoRuta Admin',
+          theme: AppTheme.lightTheme,
+          darkTheme: AppTheme.darkTheme,
+          themeMode: themeModeProvider.themeMode,
+          initialRoute: AppRoutes.root,
+          routes: AppRoutes.routes,
+          onUnknownRoute: (_) =>
+              MaterialPageRoute<void>(builder: (_) => AuthGate()),
+        ),
       ),
     );
   }

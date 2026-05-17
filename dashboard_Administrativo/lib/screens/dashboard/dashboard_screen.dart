@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/client_list_module.dart';
+
 import '../../providers/admin_session_provider.dart';
+import '../../providers/theme_mode_provider.dart';
 import '../../services/admin_auth_service.dart';
+import '../../widgets/admin/admin_list_module.dart';
+import '../../widgets/admin/current_admin_profile_dialog.dart';
+import '../../widgets/clients/client_list_module.dart';
+import '../../widgets/sponsors/dashboard/sponsor_management_panels.dart';
 import 'home/dashboard_home_section.dart';
 import 'public_routes/public_routes_management_section.dart';
 import 'reports/dashboard_reports_section.dart';
 import 'statistics/dashboard_statistics_section.dart';
-import '../../widgets/sponsor_registration_form.dart';
-import '../../widgets/admin_list_module.dart';
-import '../../widgets/current_admin_profile_dialog.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -18,6 +21,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  static const double _sidebarWidth = 300;
   static const String homeSectionId = 'home';
   static const String statisticsSectionId = 'statistics';
   static const String reportsSectionId = 'reports';
@@ -30,7 +34,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   static const String reportUsersSubsectionId = 'report-users';
   static const String reportSponsorsSubsectionId = 'report-sponsors';
   static const String reportAdsSubsectionId = 'report-ads';
-  static const String reportActivitySubsectionId = 'report-activity';
   static const String reportRoutesSubsectionId = 'report-routes';
 
   static const String sponsorRegisterSubsectionId = 'sponsor-register';
@@ -47,7 +50,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     const _AdminSection(
       id: statisticsSectionId,
-      title: 'Estadisticas',
+      title: 'Estadísticas',
       icon: Icons.bar_chart_rounded,
       summary:
           'Vista analitica con graficos administrativos y comparativos operativos del sistema.',
@@ -70,7 +73,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: reportSponsorsSubsectionId,
           title: 'Reporte de patrocinadores',
           description:
-              'Vista comercial de patrocinadores activos, categorias y campanas vigentes.',
+              'Vista comercial de patrocinadores activos, categorias y campañas vigentes.',
           icon: Icons.handshake_outlined,
         ),
         _AdminSubsection(
@@ -81,15 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: Icons.ads_click_outlined,
         ),
         _AdminSubsection(
-          id: reportActivitySubsectionId,
-          title: 'Reporte de actividad',
-          description:
-              'Monitoreo de eventos recientes, trazabilidad administrativa y actividad del panel.',
-          icon: Icons.timeline_outlined,
-        ),
-        _AdminSubsection(
           id: reportRoutesSubsectionId,
-          title: 'Reporte de rutas publicas',
+          title: 'Reporte de rutas públicas',
           description:
               'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geografica.',
           icon: Icons.route_outlined,
@@ -98,10 +94,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     const _AdminSection(
       id: publicRoutesManagementSectionId,
-      title: 'Gestion de rutas publicas',
+      title: 'Manejo de rutas públicas',
       icon: Icons.alt_route_rounded,
       summary:
-          'Administracion visual de rutas publicas creadas desde la app movil con filtros, edicion simple y eliminacion controlada.',
+          'Administracion visual de rutas públicas creadas desde la app movil con filtros, edicion simple y eliminacion controlada.',
     ),
     const _AdminSection(
       id: sponsorsSectionId,
@@ -158,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final admin = session.admin;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -204,7 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 16, 20, 16),
                         child: SizedBox(
-                          width: 300,
+                          width: _sidebarWidth,
                           child: _SidebarCard(
                             fillHeight: true,
                             sections: _sections,
@@ -222,9 +218,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(28, 20, 24, 28),
                           child: Align(
-                            alignment: Alignment.topCenter,
+                            alignment: Alignment.topLeft,
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 940),
+                              constraints: BoxConstraints(
+                                maxWidth: _resolveContentMaxWidth(
+                                  constraints.maxWidth,
+                                ),
+                              ),
                               child: _DashboardContent(
                                 section: _selectedSection,
                                 subsection: _selectedSubsection,
@@ -276,6 +276,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _selectedSubsectionId = subsectionId;
     });
   }
+
+  double _resolveContentMaxWidth(double viewportWidth) {
+    final availableWidth = viewportWidth - _sidebarWidth - 88;
+
+    if (viewportWidth >= 1900) {
+      return availableWidth.clamp(0, 1420).toDouble();
+    }
+
+    if (viewportWidth >= 1600) {
+      return availableWidth.clamp(0, 1320).toDouble();
+    }
+
+    if (viewportWidth >= 1300) {
+      return availableWidth.clamp(0, 1180).toDouble();
+    }
+
+    return availableWidth.clamp(0, 1040).toDouble();
+  }
 }
 
 class _DashboardHeader extends StatelessWidget {
@@ -285,12 +303,16 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFE7E8E9))),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
       ),
       child: Row(
         children: [
@@ -311,18 +333,81 @@ class _DashboardHeader extends StatelessWidget {
             ],
           ),
           const Spacer(),
+          const _ThemeModeToggle(),
+          const SizedBox(width: 8),
           IconButton(
             onPressed: () async {
               await onLogout();
             },
             tooltip: 'Cerrar sesion',
-            icon: const Icon(Icons.logout_rounded, color: Color(0xFF012D1D)),
+            icon: Icon(
+              Icons.logout_rounded,
+              color: isDark ? const Color(0xFFE8F3EE) : const Color(0xFF012D1D),
+            ),
           ),
         ],
       ),
     );
   }
 }
+
+class _ThemeModeToggle extends StatelessWidget {
+  const _ThemeModeToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = context.watch<ThemeModeProvider>();
+    final isDark = themeMode.isDarkMode;
+
+    return Tooltip(
+      message: isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+      child: GestureDetector(
+        onTap: () => context.read<ThemeModeProvider>().toggleTheme(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: 68,
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF050606) : const Color(0xFF0B0B0B),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isDark ? const Color(0xFF274137) : const Color(0xFF0B0B0B),
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: Icon(
+                  Icons.dark_mode_outlined,
+                  size: 18,
+                  color: isDark ? Colors.white : const Color(0xFFE8E8E8),
+                ),
+              ),
+              AnimatedAlign(
+                duration: const Duration(milliseconds: 220),
+                alignment: isDark
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SidebarCard extends StatelessWidget {
   const _SidebarCard({
     this.fillHeight = false,
@@ -362,9 +447,9 @@ class _SidebarCard extends StatelessWidget {
           Text(
             'Navegacion del panel',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 16),
           if (fillHeight)
@@ -442,29 +527,25 @@ class _SidebarCard extends StatelessWidget {
                           adminName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           adminRole.toUpperCase(),
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: const Color(0xFFA5D0B9),
-                                  ),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: const Color(0xFFA5D0B9)),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           adminEmail,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFFC1ECD4),
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: const Color(0xFFC1ECD4)),
                         ),
                       ],
                     ),
@@ -478,6 +559,7 @@ class _SidebarCard extends StatelessWidget {
     );
   }
 }
+
 class _SidebarSectionTile extends StatelessWidget {
   const _SidebarSectionTile({
     required this.section,
@@ -599,6 +681,10 @@ class _DashboardContent extends StatelessWidget {
       return const DashboardStatisticsSection();
     }
 
+    if (section.id == _DashboardScreenState.reportsSectionId) {
+      return _ReportsModule(subsection: subsection);
+    }
+
     if (section.id == _DashboardScreenState.publicRoutesManagementSectionId) {
       return const PublicRoutesManagementSection();
     }
@@ -628,33 +714,26 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-Widget _buildSectionBody(BuildContext context) {
-  if (section.id == _DashboardScreenState.reportsSectionId) {
-    return _ReportsModule(subsection: subsection);
+  Widget _buildSectionBody(BuildContext context) {
+    if (section.id == _DashboardScreenState.sponsorsSectionId) {
+      return _SponsorsModule(subsection: subsection);
+    }
+
+    if (section.id == _DashboardScreenState.clientsSectionId) {
+      return const ClientListModule();
+    }
+
+    if (section.id == _DashboardScreenState.adminsSectionId) {
+      return const AdminListModule();
+    }
+
+    return const SponsorModulePlaceholder(
+      title: 'Modulo no disponible',
+      description: 'Esta seccion todavia no tiene contenido asignado.',
+      accentColor: Color(0xFFFF7043),
+      bullets: ['Contenido pendiente'],
+    );
   }
-
-  if (section.id == _DashboardScreenState.sponsorsSectionId) {
-    return _SponsorsModule(subsection: subsection);
-  }
-
-  if (section.id == _DashboardScreenState.adminsSectionId) {
-    return const AdminListModule();
-  }
-
- if (section.id == _DashboardScreenState.clientsSectionId) {
-  return const ClientListModule();
-}
-
-  return const _ModulePlaceholder(
-    title: 'Modulo no disponible',
-    description:
-        'Esta seccion todavia no tiene contenido asignado.',
-    accentColor: Color(0xFFFF7043),
-    bullets: [
-      'Contenido pendiente',
-    ],
-  );
-}
 }
 
 class _ReportsModule extends StatelessWidget {
@@ -674,12 +753,6 @@ class _ReportsModule extends StatelessWidget {
 
     if (currentId == _DashboardScreenState.reportAdsSubsectionId) {
       return const DashboardReportsSection(reportType: DashboardReportType.ads);
-    }
-
-    if (currentId == _DashboardScreenState.reportActivitySubsectionId) {
-      return const DashboardReportsSection(
-        reportType: DashboardReportType.activity,
-      );
     }
 
     if (currentId == _DashboardScreenState.reportRoutesSubsectionId) {
@@ -702,10 +775,10 @@ class _SponsorsModule extends StatelessWidget {
     final currentId = subsection?.id;
 
     if (currentId == _DashboardScreenState.sponsorAdsSubsectionId) {
-      return const _ModulePlaceholder(
+      return const SponsorModulePlaceholder(
         title: 'Registrar publicidades',
         description:
-            'Prepara la carga de campanas, piezas y mensajes que se mostraran dentro del ecosistema EcoRuta.',
+            'Prepara la carga de campañas, piezas y mensajes que se mostraran dentro del ecosistema EcoRuta.',
         accentColor: Color(0xFFFF7043),
         bullets: [
           'Asociar publicidad a un patrocinador',
@@ -716,251 +789,11 @@ class _SponsorsModule extends StatelessWidget {
     }
 
     if (currentId == _DashboardScreenState.sponsorMapSubsectionId) {
-      return const _MapModulePreview();
+      return const SponsorMapModulePreview();
     }
 
-    return const _SponsorRegisterPreview();
+    return const SponsorRegisterPreview();
   }
-}
-
-class _SponsorRegisterPreview extends StatelessWidget {
-  const _SponsorRegisterPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return SponsorRegistrationForm(
-      onSave: (sponsor) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Patrocinador listo: ${sponsor.name}')),
-        );
-      },
-    );
-  }
-}
-
-class _MapModulePreview extends StatelessWidget {
-  const _MapModulePreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE7E8E9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Puntos de anuncios sobre mapa',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Aqui montaremos OpenStreetMap para elegir visualmente los puntos donde apareceran anuncios y activaciones.',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 420,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFE5F3EA),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: const Color(0xFFC1ECD4)),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: _MapGridPainter()),
-                  ),
-                  const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 56,
-                          color: Color(0xFF2C694E),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'Preview de area para OpenStreetMap',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF012D1D),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Positioned(
-                    left: 60,
-                    top: 90,
-                    child: _MapPin(label: 'Anuncio A'),
-                  ),
-                  const Positioned(
-                    right: 110,
-                    top: 170,
-                    child: _MapPin(label: 'Anuncio B'),
-                  ),
-                  const Positioned(
-                    left: 180,
-                    bottom: 76,
-                    child: _MapPin(label: 'Anuncio C'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModulePlaceholder extends StatelessWidget {
-  const _ModulePlaceholder({
-    required this.title,
-    required this.description,
-    required this.accentColor,
-    required this.bullets,
-  });
-
-  final String title;
-  final String description;
-  final Color accentColor;
-  final List<String> bullets;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE7E8E9)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              title.toUpperCase(),
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: accentColor),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(title, style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Text(description, style: Theme.of(context).textTheme.bodyLarge),
-          const SizedBox(height: 18),
-          ...bullets.map(
-            (bullet) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(top: 6),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      bullet,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MapPin extends StatelessWidget {
-  const _MapPin({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x14012D1D),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.location_on_rounded,
-            color: Color(0xFFFF7043),
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF012D1D),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MapGridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = const Color(0xFFB7D9C4)
-      ..strokeWidth = 1;
-
-    const step = 48.0;
-    for (double x = 0; x <= size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-    for (double y = 0; y <= size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _AdminSection {

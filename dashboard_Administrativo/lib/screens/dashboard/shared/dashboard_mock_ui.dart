@@ -2,25 +2,46 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-const dashboardBrandGreen = Color(0xFF012D1D);
-const dashboardSupportGreen = Color(0xFF2C694E);
-const dashboardSoftGreen = Color(0xFF4EAC7F);
+const dashboardBrandGreen = Color(0xFF52B788);
+const dashboardSupportGreen = Color(0xFF75DAA8);
+const dashboardSoftGreen = Color(0xFFA5D0B9);
 const dashboardLightGreen = Color(0xFFC1ECD4);
 const dashboardAccentOrange = Color(0xFFFF7043);
 const dashboardBorder = Color(0xFFE7E8E9);
+
+bool _isDarkMode(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark;
+
+Color _dashboardSurface(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFF0B261D) : Colors.white;
+
+Color _dashboardSoftSurface(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFF132F25) : const Color(0xFFF6F7F8);
+
+Color _dashboardBorderColor(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFF1B4332) : dashboardBorder;
+
+Color _dashboardBadgeSurface(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFF17352A) : const Color(0xFFEAF5EF);
+
+Color _dashboardOnSurfacePrimary(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFFE8F5E9) : const Color(0xFF0D2B20);
+
+Color _dashboardOnSurfaceSecondary(BuildContext context) =>
+    _isDarkMode(context) ? const Color(0xFFB9CBC1) : const Color(0xFF5F746B);
 
 class DashboardMetricData {
   const DashboardMetricData({
     required this.title,
     required this.value,
-    required this.changeLabel,
+    this.changeLabel,
     required this.icon,
     required this.accentColor,
   });
 
   final String title;
   final String value;
-  final String changeLabel;
+  final String? changeLabel;
   final IconData icon;
   final Color accentColor;
 }
@@ -180,14 +201,16 @@ class DashboardSurfaceCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _dashboardSurface(context),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: dashboardBorder),
-        boxShadow: const [
+        border: Border.all(color: _dashboardBorderColor(context)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A012D1D),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: _isDarkMode(context)
+                ? const Color(0x66020B08)
+                : const Color(0x0A012D1D),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -226,7 +249,13 @@ class DashboardHeroCard extends StatelessWidget {
                 ).textTheme.headlineLarge?.copyWith(fontSize: 34),
               ),
               const SizedBox(height: 12),
-              Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
               if (badges.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 Wrap(spacing: 10, runSpacing: 10, children: badges),
@@ -235,16 +264,7 @@ class DashboardHeroCard extends StatelessWidget {
           );
 
           if (compact || trailing == null) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                textBlock,
-                if (trailing != null) ...[
-                  const SizedBox(height: 20),
-                  trailing!,
-                ],
-              ],
-            );
+            return textBlock;
           }
 
           return Row(
@@ -276,8 +296,13 @@ class DashboardHeroBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF5EF),
+        color: _dashboardBadgeSurface(context),
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: _isDarkMode(context)
+              ? const Color(0xFF214937)
+              : Colors.transparent,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -287,7 +312,7 @@ class DashboardHeroBadge extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: dashboardBrandGreen,
+              color: _dashboardOnSurfacePrimary(context),
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -342,6 +367,9 @@ class DashboardMetricCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: metric.accentColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: metric.accentColor.withValues(alpha: 0.24),
+                    ),
                   ),
                   child: Icon(metric.icon, color: metric.accentColor),
                 ),
@@ -350,16 +378,19 @@ class DashboardMetricCard extends StatelessWidget {
             const SizedBox(height: 18),
             Text(
               metric.value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontSize: 30,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(fontSize: 30),
             ),
             const SizedBox(height: 10),
-            DashboardStatusChip(
-              label: metric.changeLabel,
-              color: dashboardSupportGreen,
-              backgroundColor: const Color(0xFFF3F8F5),
-            ),
+            if (metric.changeLabel != null)
+              DashboardStatusChip(
+                label: metric.changeLabel!,
+                color: dashboardSupportGreen,
+                backgroundColor: _isDarkMode(context)
+                    ? const Color(0xFF17352A)
+                    : const Color(0xFFF3F8F5),
+              ),
           ],
         ),
       ),
@@ -399,14 +430,14 @@ class DashboardSectionCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodyLarge),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ],
                 ),
               ),
-              if (actions != null) ...[
-                const SizedBox(width: 16),
-                actions!,
-              ],
+              if (actions != null) ...[const SizedBox(width: 16), actions!],
             ],
           ),
           const SizedBox(height: 24),
@@ -438,6 +469,7 @@ class DashboardStatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Text(
         label,
@@ -472,18 +504,27 @@ class DashboardActionGhostButton extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF6F7F8),
+            color: _dashboardSoftSurface(context),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _dashboardBorderColor(context)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: dashboardBrandGreen),
+              Icon(
+                icon,
+                size: 18,
+                color: _isDarkMode(context)
+                    ? dashboardSupportGreen
+                    : dashboardBrandGreen,
+              ),
               const SizedBox(width: 8),
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: dashboardBrandGreen,
+                  color: _isDarkMode(context)
+                      ? _dashboardOnSurfacePrimary(context)
+                      : dashboardBrandGreen,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -524,12 +565,13 @@ class DashboardBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = _isDarkMode(context);
     return Column(
       children: [
         SizedBox(
           height: 240,
           child: CustomPaint(
-            painter: _BarChartPainter(data),
+            painter: _BarChartPainter(data, isDark: isDark),
             child: const SizedBox.expand(),
           ),
         ),
@@ -558,10 +600,11 @@ class DashboardLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = _isDarkMode(context);
     return SizedBox(
       height: 270,
       child: CustomPaint(
-        painter: _LineChartPainter(data),
+        painter: _LineChartPainter(data, isDark: isDark),
         child: const SizedBox.expand(),
       ),
     );
@@ -575,12 +618,13 @@ class DashboardPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = _isDarkMode(context);
     return Column(
       children: [
         SizedBox(
           height: 220,
           child: CustomPaint(
-            painter: _PieChartPainter(data),
+            painter: _PieChartPainter(data, isDark: isDark),
             child: const SizedBox.expand(),
           ),
         ),
@@ -603,7 +647,7 @@ class DashboardPieChart extends StatelessWidget {
                   child: Text(
                     item.label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: dashboardBrandGreen,
+                      color: _dashboardOnSurfacePrimary(context),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -611,7 +655,7 @@ class DashboardPieChart extends StatelessWidget {
                 Text(
                   '${item.value}%',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: dashboardBrandGreen,
+                    color: _dashboardOnSurfacePrimary(context),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -635,8 +679,9 @@ class _LegendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F7F8),
+        color: _dashboardSoftSurface(context),
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _dashboardBorderColor(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -684,7 +729,7 @@ class _RecentActivityTile extends StatelessWidget {
                     child: Container(
                       width: 2,
                       margin: const EdgeInsets.symmetric(vertical: 8),
-                      color: const Color(0xFFE1E8E4),
+                      color: _dashboardBorderColor(context),
                     ),
                   ),
               ],
@@ -694,8 +739,9 @@ class _RecentActivityTile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAF9),
+                  color: _dashboardSoftSurface(context),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _dashboardBorderColor(context)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,7 +763,12 @@ class _RecentActivityTile extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text(item.detail, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      item.detail,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: _dashboardOnSurfaceSecondary(context),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -730,9 +781,10 @@ class _RecentActivityTile extends StatelessWidget {
 }
 
 class _BarChartPainter extends CustomPainter {
-  _BarChartPainter(this.data);
+  _BarChartPainter(this.data, {required this.isDark});
 
   final List<DashboardBarDatum> data;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -743,19 +795,27 @@ class _BarChartPainter extends CustomPainter {
     final chartHeight = size.height - bottomPadding - topPadding;
     final chartWidth = size.width - leftPadding;
     final barWidth = (chartWidth - (gap * (data.length - 1))) / data.length;
-    final maxValue = data.fold<double>(0, (max, item) => math.max(max, item.value));
+    final maxValue = data.fold<double>(
+      0,
+      (max, item) => math.max(max, item.value),
+    );
+    final safeMaxValue = maxValue <= 0 ? 1.0 : maxValue;
     final gridPaint = Paint()
-      ..color = const Color(0xFFE9EEEB)
+      ..color = isDark ? const Color(0xFF214937) : const Color(0xFFE9EEEB)
       ..strokeWidth = 1;
 
     for (int i = 0; i < 4; i++) {
       final dy = topPadding + (chartHeight / 3) * i;
-      canvas.drawLine(Offset(leftPadding, dy), Offset(size.width, dy), gridPaint);
+      canvas.drawLine(
+        Offset(leftPadding, dy),
+        Offset(size.width, dy),
+        gridPaint,
+      );
     }
 
     for (int i = 0; i < data.length; i++) {
       final item = data[i];
-      final ratio = item.value / maxValue;
+      final ratio = item.value / safeMaxValue;
       final barHeight = chartHeight * ratio;
       final left = leftPadding + (barWidth + gap) * i;
       final rect = RRect.fromRectAndRadius(
@@ -772,10 +832,10 @@ class _BarChartPainter extends CustomPainter {
       final labelPainter = TextPainter(
         text: TextSpan(
           text: item.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF5F746B),
+            color: isDark ? const Color(0xFFB9CBC1) : const Color(0xFF5F746B),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -795,9 +855,10 @@ class _BarChartPainter extends CustomPainter {
 }
 
 class _LineChartPainter extends CustomPainter {
-  _LineChartPainter(this.data);
+  _LineChartPainter(this.data, {required this.isDark});
 
   final List<DashboardLineDatum> data;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -807,15 +868,23 @@ class _LineChartPainter extends CustomPainter {
     const bottomPadding = 30.0;
     final chartWidth = size.width - leftPadding - rightPadding;
     final chartHeight = size.height - topPadding - bottomPadding;
-    final maxValue = data.fold<double>(0, (max, item) => math.max(max, item.value));
+    final maxValue = data.fold<double>(
+      0,
+      (max, item) => math.max(max, item.value),
+    );
+    final safeMaxValue = maxValue <= 0 ? 1.0 : maxValue;
     final stepX = data.length > 1 ? chartWidth / (data.length - 1) : chartWidth;
     final gridPaint = Paint()
-      ..color = const Color(0xFFE9EEEB)
+      ..color = isDark ? const Color(0xFF214937) : const Color(0xFFE9EEEB)
       ..strokeWidth = 1;
 
     for (int i = 0; i < 4; i++) {
       final dy = topPadding + (chartHeight / 3) * i;
-      canvas.drawLine(Offset(leftPadding, dy), Offset(size.width - rightPadding, dy), gridPaint);
+      canvas.drawLine(
+        Offset(leftPadding, dy),
+        Offset(size.width - rightPadding, dy),
+        gridPaint,
+      );
     }
 
     final path = Path();
@@ -824,7 +893,8 @@ class _LineChartPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final item = data[i];
       final dx = leftPadding + stepX * i;
-      final dy = topPadding + chartHeight - (item.value / maxValue) * chartHeight;
+      final dy =
+          topPadding + chartHeight - (item.value / safeMaxValue) * chartHeight;
       if (i == 0) {
         path.moveTo(dx, dy);
         fillPath.moveTo(dx, size.height - bottomPadding);
@@ -835,14 +905,17 @@ class _LineChartPainter extends CustomPainter {
       }
     }
 
-    fillPath.lineTo(leftPadding + stepX * (data.length - 1), size.height - bottomPadding);
+    fillPath.lineTo(
+      leftPadding + stepX * (data.length - 1),
+      size.height - bottomPadding,
+    );
     fillPath.close();
 
     canvas.drawPath(
       fillPath,
       Paint()
         ..shader = const LinearGradient(
-          colors: [Color(0x334EAC7F), Color(0x004EAC7F)],
+          colors: [Color(0x3352B788), Color(0x0052B788)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
@@ -851,7 +924,7 @@ class _LineChartPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = dashboardBrandGreen
+        ..color = dashboardSupportGreen
         ..strokeWidth = 3
         ..style = PaintingStyle.stroke,
     );
@@ -859,17 +932,26 @@ class _LineChartPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final item = data[i];
       final dx = leftPadding + stepX * i;
-      final dy = topPadding + chartHeight - (item.value / maxValue) * chartHeight;
-      canvas.drawCircle(Offset(dx, dy), 5, Paint()..color = dashboardSoftGreen);
-      canvas.drawCircle(Offset(dx, dy), 2.5, Paint()..color = Colors.white);
+      final dy =
+          topPadding + chartHeight - (item.value / safeMaxValue) * chartHeight;
+      canvas.drawCircle(
+        Offset(dx, dy),
+        5,
+        Paint()..color = dashboardBrandGreen,
+      );
+      canvas.drawCircle(
+        Offset(dx, dy),
+        2.5,
+        Paint()..color = isDark ? const Color(0xFF132F25) : Colors.white,
+      );
 
       final labelPainter = TextPainter(
         text: TextSpan(
           text: item.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF5F746B),
+            color: isDark ? const Color(0xFFB9CBC1) : const Color(0xFF5F746B),
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -889,20 +971,22 @@ class _LineChartPainter extends CustomPainter {
 }
 
 class _PieChartPainter extends CustomPainter {
-  _PieChartPainter(this.data);
+  _PieChartPainter(this.data, {required this.isDark});
 
   final List<DashboardPieDatum> data;
+  final bool isDark;
 
   @override
   void paint(Canvas canvas, Size size) {
     final total = data.fold<double>(0, (sum, item) => sum + item.value);
+    final safeTotal = total <= 0 ? 1.0 : total;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 12;
     final rect = Rect.fromCircle(center: center, radius: radius);
     double startAngle = -math.pi / 2;
 
     for (final item in data) {
-      final sweepAngle = (item.value / total) * math.pi * 2;
+      final sweepAngle = (item.value / safeTotal) * math.pi * 2;
       canvas.drawArc(
         rect,
         startAngle,
@@ -913,7 +997,11 @@ class _PieChartPainter extends CustomPainter {
       startAngle += sweepAngle;
     }
 
-    canvas.drawCircle(center, radius * 0.52, Paint()..color = Colors.white);
+    canvas.drawCircle(
+      center,
+      radius * 0.52,
+      Paint()..color = isDark ? const Color(0xFF132F25) : Colors.white,
+    );
   }
 
   @override

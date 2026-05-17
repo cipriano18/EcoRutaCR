@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../providers/admin_session_provider.dart';
 import '../../services/admin_auth_service.dart';
-import '../../widgets/auth_card.dart';
+import '../../widgets/auth/auth_card.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       body: Container(
-        color: const Color(0xFFF8F9FA),
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -221,11 +221,11 @@ class _LoginScreenState extends State<LoginScreen> {
     if (normalized.isEmpty) {
       return 'Ingresa una contrasenia.';
     }
-
+    /*
     if (normalized.length < 8) {
       return 'La contrasenia debe tener al menos 8 caracteres.';
     }
-
+*/
     return null;
   }
 }
@@ -244,13 +244,17 @@ class _StatusMessage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFC1ECD4),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFF1B3028)
+            : const Color(0xFFC1ECD4),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Text(
         message!,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: const Color(0xFF012D1D),
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFFE8F3EE)
+              : const Color(0xFF012D1D),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -266,22 +270,30 @@ class _InfoPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF13201B) : Colors.white,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE7E8E9)),
+        border: Border.all(
+          color: isDark ? const Color(0xFF274137) : const Color(0xFFE7E8E9),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF2C694E)),
+          Icon(
+            icon,
+            size: 18,
+            color: isDark ? const Color(0xFFC1ECD4) : const Color(0xFF2C694E),
+          ),
           const SizedBox(width: 8),
           Text(
             label,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF012D1D),
+              color: isDark ? const Color(0xFFE8F3EE) : const Color(0xFF012D1D),
               fontWeight: FontWeight.w700,
             ),
           ),

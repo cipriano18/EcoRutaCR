@@ -30,16 +30,22 @@ class AdminSessionProvider extends ChangeNotifier {
 
     _subscription = _authService.authStateChanges().listen(_handleAuthChanged);
 
-    if (_authService.currentUser != null) {
-      await _authService.logout();
-    } else {
-      await _handleAuthChanged(null);
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      _admin = null;
+      _isLoading = false;
+      notifyListeners();
+      return;
     }
+
+    await _handleAuthChanged(currentUser);
   }
 
   Future<void> _handleAuthChanged(User? user) async {
-    _isLoading = true;
-    notifyListeners();
+    if (user != null) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     if (user == null) {
       _admin = null;
@@ -54,7 +60,9 @@ class AdminSessionProvider extends ChangeNotifier {
         _errorMessage = 'La cuenta autenticada no pertenece a admins.';
         await _authService.logout();
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('AdminSessionProvider._handleAuthChanged error: $error');
+      debugPrint('$stackTrace');
       _admin = null;
       _errorMessage = 'No se pudo cargar la sesion administrativa.';
     }

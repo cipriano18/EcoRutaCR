@@ -1,278 +1,252 @@
 import 'package:flutter/material.dart';
 
+import '../../../services/dashboard_home_service.dart';
+import 'home_support_widgets.dart';
 import '../shared/dashboard_mock_ui.dart';
 
-class DashboardHomeSection extends StatelessWidget {
+class DashboardHomeSection extends StatefulWidget {
   const DashboardHomeSection({super.key});
 
   @override
+  State<DashboardHomeSection> createState() => _DashboardHomeSectionState();
+}
+
+class _DashboardHomeSectionState extends State<DashboardHomeSection> {
+  late final DashboardHomeService _service;
+  late Future<DashboardHomeSnapshot> _snapshotFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = DashboardHomeService();
+    _snapshotFuture = _service.loadSnapshot();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DashboardHeroCard(
-          title: 'Dashboard General',
-          subtitle:
-              'Vista principal del panel administrativo EcoRutaCR con indicadores operativos, estado institucional y actividad reciente.',
-          badges: const [
-            DashboardHeroBadge(
-              label: 'Panel principal',
-              icon: Icons.home_outlined,
+    return FutureBuilder<DashboardHomeSnapshot>(
+      future: _snapshotFuture,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        final hasError = snapshot.hasError;
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+        final metrics = _buildMetrics(data);
+        final operationCards =
+            data?.operationCards ?? const <DashboardOperationalCardData>[];
+        final highlights = data?.highlights ?? const <(String, String)>[];
+        final recentActivity =
+            data?.recentActivity ?? const <DashboardActivityItem>[];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DashboardHeroCard(
+              title: 'Dashboard General',
+              subtitle:
+                  'Vista principal del panel administrativo EcoRutaCR con indicadores operativos, estado institucional y actividad reciente.',
+              badges: [
+                const DashboardHeroBadge(
+                  label: 'Panel principal',
+                  icon: Icons.home_outlined,
+                ),
+                DashboardHeroBadge(
+                  label: isLoading
+                      ? 'Cargando Firestore'
+                      : hasError
+                      ? 'Lectura parcial'
+                      : 'Datos en tiempo real',
+                  icon: isLoading
+                      ? Icons.sync_rounded
+                      : hasError
+                      ? Icons.warning_amber_rounded
+                      : Icons.cloud_done_outlined,
+                ),
+              ],
             ),
-            DashboardHeroBadge(
-              label: 'Datos simulados',
-              icon: Icons.auto_awesome_mosaic_outlined,
-            ),
-          ],
-          trailing: Container(
-            constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F8F5),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+            const SizedBox(height: 24),
+            DashboardMetricGrid(metrics: metrics),
+            const SizedBox(height: 24),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 860;
+
+                if (wide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: DashboardSectionCard(
+                          title: 'Resumen operativo',
+                          subtitle:
+                              'Panorama de lectura real sobre clientes, administradores y rutas públicas disponibles en Firestore.',
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: operationCards.isNotEmpty
+                                        ? HomeInfoCard(
+                                            title: operationCards[0].title,
+                                            value: operationCards[0].value,
+                                            subtitle:
+                                                operationCards[0].subtitle,
+                                            accentColor:
+                                                operationCards[0].accentColor,
+                                          )
+                                        : HomeEmptyState(
+                                            label: isLoading
+                                                ? 'Cargando resumen operativo...'
+                                                : 'Sin resumen operativo disponible.',
+                                          ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: operationCards.length > 1
+                                        ? HomeInfoCard(
+                                            title: operationCards[1].title,
+                                            value: operationCards[1].value,
+                                            subtitle:
+                                                operationCards[1].subtitle,
+                                            accentColor:
+                                                operationCards[1].accentColor,
+                                          )
+                                        : HomeEmptyState(
+                                            label: isLoading
+                                                ? 'Cargando rutas públicas...'
+                                                : 'Sin datos de rutas públicas disponibles.',
+                                          ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              highlights.isNotEmpty
+                                  ? HomeHighlightsStrip(items: highlights)
+                                  : HomeEmptyState(
+                                      label: isLoading
+                                          ? 'Cargando lecturas destacadas...'
+                                          : 'Sin lecturas destacadas disponibles.',
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        flex: 2,
+                        child: DashboardSectionCard(
+                          title: 'Actividad reciente',
+                          subtitle:
+                              'Eventos inferidos desde las colecciones reales disponibles del proyecto.',
+                          child: recentActivity.isNotEmpty
+                              ? DashboardRecentActivityList(
+                                  items: recentActivity,
+                                )
+                              : HomeEmptyState(
+                                  label: isLoading
+                                      ? 'Cargando actividad reciente...'
+                                      : 'Sin actividad reciente disponible.',
+                                ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
                   children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: dashboardBrandGreen,
-                        borderRadius: BorderRadius.circular(14),
+                    DashboardSectionCard(
+                      title: 'Resumen operativo',
+                      subtitle:
+                          'Panorama de lectura real sobre clientes, administradores y rutas públicas disponibles en Firestore.',
+                      child: MobileOverviewBlock(
+                        operationCards: operationCards,
+                        highlights: highlights,
                       ),
-                      child: const Icon(Icons.eco_outlined, color: Colors.white),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Estado del panel',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                    const SizedBox(height: 20),
+                    DashboardSectionCard(
+                      title: 'Actividad reciente',
+                      subtitle:
+                          'Eventos inferidos desde las colecciones reales disponibles del proyecto.',
+                      child: recentActivity.isNotEmpty
+                          ? DashboardRecentActivityList(items: recentActivity)
+                          : HomeEmptyState(
+                              label: isLoading
+                                  ? 'Cargando actividad reciente...'
+                                  : 'Sin actividad reciente disponible.',
+                            ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (hasError) ...[
+              const SizedBox(height: 20),
+              DashboardSectionCard(
+                title: 'Siguiente implementacion recomendada',
+                subtitle:
+                    'Esto es lo que convendria agregar para que Resumen operativo y Actividad reciente queden completos.',
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RecommendationLine(
+                      text:
+                          'Agregar en routes campos estables como name, createdAt, activityType, isPublic, originLabel y destinationLabel.',
+                    ),
+                    RecommendationLine(
+                      text:
+                          'Guardar eventos administrativos en una coleccion activity_logs para no inferir actividad solo a partir de documentos recientes.',
+                    ),
+                    RecommendationLine(
+                      text:
+                          'Persistir estatus o moderacion de rutas públicas para poder mostrar aprobaciones, bloqueos y revisiones reales.',
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  'Operativo',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: dashboardBrandGreen,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Los modulos principales reportan actividad estable y una administracion lista para seguimiento diario.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        const DashboardMetricGrid(metrics: dashboardOverviewMetrics),
-        const SizedBox(height: 24),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= 860;
-
-            if (wide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: DashboardSectionCard(
-                      title: 'Resumen operativo',
-                      subtitle:
-                          'Panorama general mock de rendimiento, cobertura y crecimiento del ecosistema administrativo.',
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _InfoCard(
-                                  title: 'Cobertura en mapa',
-                                  value: '24 zonas',
-                                  subtitle:
-                                      'Distribuidas en corredores urbanos y rutas publicas de mayor impacto.',
-                                  accentColor: dashboardSoftGreen,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _InfoCard(
-                                  title: 'Publicacion promedio',
-                                  value: '87%',
-                                  subtitle:
-                                      'Nivel simulado de anuncios activos y visibles sobre el total cargado.',
-                                  accentColor: dashboardAccentOrange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _HighlightsStrip(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  const Expanded(
-                    flex: 2,
-                    child: DashboardSectionCard(
-                      title: 'Actividad reciente',
-                      subtitle:
-                          'Eventos simulados del sistema y acciones administrativas mas recientes.',
-                      child: DashboardRecentActivityList(
-                        items: dashboardRecentActivity,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            return const Column(
-              children: [
-                DashboardSectionCard(
-                  title: 'Resumen operativo',
-                  subtitle:
-                      'Panorama general mock de rendimiento, cobertura y crecimiento del ecosistema administrativo.',
-                  child: _MobileOverviewBlock(),
-                ),
-                SizedBox(height: 20),
-                DashboardSectionCard(
-                  title: 'Actividad reciente',
-                  subtitle:
-                      'Eventos simulados del sistema y acciones administrativas mas recientes.',
-                  child: DashboardRecentActivityList(
-                    items: dashboardRecentActivity,
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
-}
 
-class _MobileOverviewBlock extends StatelessWidget {
-  const _MobileOverviewBlock();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: const [
-        _InfoCard(
-          title: 'Cobertura en mapa',
-          value: '24 zonas',
-          subtitle:
-              'Distribuidas en corredores urbanos y rutas publicas de mayor impacto.',
-          accentColor: dashboardSoftGreen,
-        ),
-        SizedBox(height: 16),
-        _InfoCard(
-          title: 'Publicacion promedio',
-          value: '87%',
-          subtitle:
-              'Nivel simulado de anuncios activos y visibles sobre el total cargado.',
-          accentColor: dashboardAccentOrange,
-        ),
-        SizedBox(height: 16),
-        _HighlightsStrip(),
-      ],
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.accentColor,
-  });
-
-  final String title;
-  final String value;
-  final String subtitle;
-  final Color accentColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAF9),
-        borderRadius: BorderRadius.circular(22),
+  List<DashboardMetricData> _buildMetrics(DashboardHomeSnapshot? data) {
+    return [
+      DashboardMetricData(
+        title: 'Total de patrocinadores',
+        value: '${data?.totalSponsors ?? 0}',
+        changeLabel: 'Próximamente',
+        icon: Icons.handshake_outlined,
+        accentColor: dashboardSoftGreen,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          DashboardStatusChip(label: title, color: accentColor),
-          const SizedBox(height: 14),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: dashboardBrandGreen,
-              fontSize: 28,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
-        ],
+      DashboardMetricData(
+        title: 'Total de clientes',
+        value: '${data?.totalClients ?? 0}',
+        icon: Icons.groups_2_outlined,
+        accentColor: dashboardBrandGreen,
       ),
-    );
-  }
-}
-
-class _HighlightsStrip extends StatelessWidget {
-  const _HighlightsStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      ('Clientes con mayor actividad', 'Ruta Norte'),
-      ('Patrocinador mas reciente', 'Verde Urbano'),
-      ('Modulo con mayor uso', 'Publicidades'),
+      DashboardMetricData(
+        title: 'Total de administradores',
+        value: '${data?.totalAdmins ?? 0}',
+        icon: Icons.admin_panel_settings_outlined,
+        accentColor: dashboardSupportGreen,
+      ),
+      DashboardMetricData(
+        title: 'Publicidades activas',
+        value: '${data?.totalAds ?? 0}',
+        changeLabel: 'Próximamente',
+        icon: Icons.campaign_outlined,
+        accentColor: dashboardAccentOrange,
+      ),
+      DashboardMetricData(
+        title: 'Total de rutas públicas',
+        value: '${data?.totalPublicRoutes ?? 0}',
+        icon: Icons.route_outlined,
+        accentColor: dashboardSoftGreen,
+      ),
     ];
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: items
-          .map(
-            (item) => Container(
-              width: 240,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: dashboardBorder),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.$1, style: Theme.of(context).textTheme.labelLarge),
-                  const SizedBox(height: 10),
-                  Text(
-                    item.$2,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontSize: 16,
-                      color: dashboardBrandGreen,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
-    );
   }
 }
