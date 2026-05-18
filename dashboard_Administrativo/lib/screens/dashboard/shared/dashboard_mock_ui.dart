@@ -171,14 +171,14 @@ const dashboardRecentActivity = [
   ),
   DashboardActivityItem(
     title: 'Administrador agregado',
-    detail: 'Se habilito acceso operativo para gestion interna.',
+    detail: 'Se habilito acceso operativo para gestión interna.',
     timeLabel: 'Hace 1 h',
     icon: Icons.admin_panel_settings_outlined,
     accentColor: dashboardBrandGreen,
   ),
   DashboardActivityItem(
     title: 'Nuevo punto agregado al mapa',
-    detail: 'Zona Norte recibio un nuevo punto promocional.',
+    detail: 'Zona Norte recibió un nuevo punto promocional.',
     timeLabel: 'Hace 2 h',
     icon: Icons.location_on_outlined,
     accentColor: dashboardSupportGreen,

@@ -48,7 +48,7 @@ class _PublicRoutesManagementSectionState
             const DashboardHeroCard(
               title: 'Manejo de rutas públicas',
               subtitle:
-                  'Moderacion administrativa de rutas públicas creadas desde EcoRutaCR con revision visual, filtros simples y acciones de mantenimiento.',
+                  'Moderación administrativa de rutas públicas creadas desde EcoRutaCR con revision visual, filtros simples y acciones de mantenimiento.',
               badges: [
                 DashboardHeroBadge(
                   label: 'Rutas tipo senderismo, ciclismo y running',
@@ -62,7 +62,7 @@ class _PublicRoutesManagementSectionState
                 DashboardMetricData(
                   title: 'Rutas públicas',
                   value: '${routes.length}',
-                  changeLabel: 'Coleccion routes',
+                  changeLabel: 'Colección routes',
                   icon: Icons.public_outlined,
                   accentColor: dashboardBrandGreen,
                 ),
@@ -96,7 +96,7 @@ class _PublicRoutesManagementSectionState
             DashboardSectionCard(
               title: 'Listado administrativo de rutas públicas',
               subtitle:
-                  'Explora, filtra, edita y elimina rutas públicas con una vista limpia, ecologica y coherente con EcoRutaCR.',
+                  'Explora, filtra, edita y elimina rutas públicas con una vista limpia, ecológica y coherente con EcoRutaCR.',
               child: Column(
                 children: [
                   PublicRoutesToolbar(
@@ -203,7 +203,7 @@ class _PublicRoutesManagementSectionState
                   controller: descriptionController,
                   minLines: 3,
                   maxLines: 5,
-                  decoration: const InputDecoration(labelText: 'Descripcion'),
+                  decoration: const InputDecoration(labelText: 'Descripción'),
                 ),
               ],
             ),
@@ -363,7 +363,7 @@ class _PublicRoutesManagementSectionState
                   value: formatDuration(route.estimatedDurationSeconds),
                 ),
                 PublicRouteDetailLine(
-                  label: 'Elevacion',
+                  label: 'Elevación',
                   value: formatElevation(route.elevationGainMeters),
                 ),
                 PublicRouteDetailLine(

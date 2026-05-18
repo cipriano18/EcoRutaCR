@@ -340,13 +340,13 @@ final dashboardReportConfigs = {
       DashboardActivityItem(
         title: 'Anuncio reactivado',
         detail:
-            'La campana costera volvio a publicarse con nuevo material visual.',
+            'La campana costera volvió a publicarse con nuevo material visual.',
         timeLabel: 'Hace 22 min',
         icon: Icons.autorenew_rounded,
         accentColor: dashboardSoftGreen,
       ),
       DashboardActivityItem(
-        title: 'Pico de visualizacion',
+        title: 'Pico de visualización',
         detail:
             'Ruta Central concentro el mayor volumen de impresiones del dia.',
         timeLabel: 'Hace 1 h',
@@ -355,9 +355,9 @@ final dashboardReportConfigs = {
       ),
     ],
     highlights: const [
-      ('Anuncio lider', 'Campana Ruta Central', dashboardSoftGreen),
+      ('Anuncio líder', 'Campana Ruta Central', dashboardSoftGreen),
       ('Mejor CTR', '6.1%', dashboardBrandGreen),
-      ('Ajuste sugerido', 'Segmentacion horaria', dashboardAccentOrange),
+      ('Ajuste sugerido', 'Segmentación horaria', dashboardAccentOrange),
     ],
   ),
   DashboardReportType.publicRoutes: DashboardReportConfig(
@@ -445,7 +445,7 @@ final dashboardReportConfigs = {
         secondary: 'Alajuela',
         detail: '5 puntos',
         status: 'Pendiente',
-        activity: 'Hace 2 dias',
+        activity: 'Hace 2 días',
         actionLabel: 'Revisar',
       ),
     ],

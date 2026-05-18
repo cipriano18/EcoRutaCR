@@ -53,7 +53,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       title: 'Estadísticas',
       icon: Icons.bar_chart_rounded,
       summary:
-          'Vista analitica con graficos administrativos y comparativos operativos del sistema.',
+          'Vista analítica con gráficos administrativos y comparativos operativos del sistema.',
     ),
     const _AdminSection(
       id: reportsSectionId,
@@ -66,14 +66,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: reportUsersSubsectionId,
           title: 'Reporte de usuarios',
           description:
-              'Seguimiento de usuarios registrados, activos, crecimiento y ultimos movimientos.',
+              'Seguimiento de usuarios registrados, activos, crecimiento y últimos movimientos.',
           icon: Icons.people_alt_outlined,
         ),
         _AdminSubsection(
           id: reportSponsorsSubsectionId,
           title: 'Reporte de patrocinadores',
           description:
-              'Vista comercial de patrocinadores activos, categorias y campañas vigentes.',
+              'Vista comercial de patrocinadores activos, categorías y campañas vigentes.',
           icon: Icons.handshake_outlined,
         ),
         _AdminSubsection(
@@ -87,7 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: reportRoutesSubsectionId,
           title: 'Reporte de rutas públicas',
           description:
-              'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geografica.',
+              'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geográfica.',
           icon: Icons.route_outlined,
         ),
       ],
@@ -97,14 +97,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       title: 'Manejo de rutas públicas',
       icon: Icons.alt_route_rounded,
       summary:
-          'Administracion visual de rutas públicas creadas desde la app movil con filtros, edicion simple y eliminacion controlada.',
+          'Administración visual de rutas públicas creadas desde la app móvil con filtros, edición simple y eliminación controlada.',
     ),
     const _AdminSection(
       id: sponsorsSectionId,
       title: 'Manejo de patrocinadores',
       icon: Icons.handshake_outlined,
       summary:
-          'Registra aliados, administra publicidades y prepara los puntos donde apareceran sus anuncios.',
+          'Registra aliados, administra publicidades y prepara los puntos donde aparecerán sus anuncios.',
       subsections: [
         _AdminSubsection(
           id: sponsorRegisterSubsectionId,
@@ -117,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: sponsorAdsSubsectionId,
           title: 'Registrar publicidades',
           description:
-              'Gestion de materiales visuales, copys y anuncios activos por patrocinador.',
+              'Gestión de materiales visuales, copys y anuncios activos por patrocinador.',
           icon: Icons.campaign_outlined,
         ),
         _AdminSubsection(
@@ -339,7 +339,7 @@ class _DashboardHeader extends StatelessWidget {
             onPressed: () async {
               await onLogout();
             },
-            tooltip: 'Cerrar sesion',
+            tooltip: 'Cerrar sesión',
             icon: Icon(
               Icons.logout_rounded,
               color: isDark ? const Color(0xFFE8F3EE) : const Color(0xFF012D1D),
@@ -445,7 +445,7 @@ class _SidebarCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Navegacion del panel',
+            'Navegación del panel',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -729,7 +729,7 @@ class _DashboardContent extends StatelessWidget {
 
     return const SponsorModulePlaceholder(
       title: 'Modulo no disponible',
-      description: 'Esta seccion todavia no tiene contenido asignado.',
+      description: 'Esta sección todavía no tiene contenido asignado.',
       accentColor: Color(0xFFFF7043),
       bullets: ['Contenido pendiente'],
     );
@@ -782,7 +782,7 @@ class _SponsorsModule extends StatelessWidget {
         accentColor: Color(0xFFFF7043),
         bullets: [
           'Asociar publicidad a un patrocinador',
-          'Definir vigencia o estado de publicacion',
+          'Definir vigencia o estado de publicación',
           'Preparar assets y copys por anuncio',
         ],
       );
