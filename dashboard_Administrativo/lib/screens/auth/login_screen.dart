@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on FirebaseAuthException catch (error) {
       setState(() {
-        _statusMessage = error.message ?? 'No se pudo iniciar sesion.';
+        _statusMessage = error.message ?? 'No se pudo iniciar sesión.';
       });
     } finally {
       if (mounted) {
@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: AuthCard(
-                  title: 'Iniciar sesion',
+                  title: 'Iniciar sesión',
                   subtitle:
                       'Usa tus credenciales administrativas para acceder al dashboard.',
                   child: Form(
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'CORREO ELECTRONICO',
+                          'CORREO ELECTRÓNICO',
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
                         const SizedBox(height: 8),
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 18),
                         Text(
-                          'CONTRASENIA',
+                          'CONTRASEÑA',
                           style: Theme.of(context).textTheme.labelLarge,
                         ),
                         const SizedBox(height: 8),
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscureText: _obscurePassword,
                           autofillHints: const [AutofillHints.password],
                           decoration: InputDecoration(
-                            hintText: 'Ingresa tu contrasenia',
+                            hintText: 'Ingresa tu contraseña',
                             prefixIcon: const Icon(Icons.lock_outline_rounded),
                             suffixIcon: IconButton(
                               onPressed: () {
@@ -132,9 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             foregroundColor: Colors.white,
                           ),
                           child: Text(
-                            _isSubmitting
-                                ? 'Ingresando...'
-                                : 'Entrar al panel',
+                            _isSubmitting ? 'Ingresando...' : 'Entrar al panel',
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -156,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _validateEmail(String? value) {
     final normalized = value?.trim() ?? '';
     if (normalized.isEmpty) {
-      return 'Ingresa un correo electronico.';
+      return 'Ingresa un correo electrónico.';
     }
 
     if (!normalized.contains('@')) {
@@ -169,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _validatePassword(String? value) {
     final normalized = value?.trim() ?? '';
     if (normalized.isEmpty) {
-      return 'Ingresa una contrasenia.';
+      return 'Ingresa una contraseña.';
     }
     return null;
   }
