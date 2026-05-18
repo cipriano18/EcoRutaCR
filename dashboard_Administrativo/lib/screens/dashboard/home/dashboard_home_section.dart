@@ -124,8 +124,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
                   children: [
                     DashboardSectionCard(
                       title: 'Interacciones',
-                      subtitle:
-                          'Lista de anuncios mas populares en EcoRutaCR.',
+                      subtitle: 'Lista de anuncios mas populares en EcoRutaCR.',
                       child: topAdInteractions.isNotEmpty
                           ? HomeAdInteractionsList(items: topAdInteractions)
                           : HomeEmptyState(
@@ -156,7 +155,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
               DashboardSectionCard(
                 title: 'Siguiente implementación recomendada',
                 subtitle:
-                    'Esto es lo que convendria agregar para que Interacciones y Actividad reciente queden completos.',
+                    'Esto es lo que convendría agregar para que Interacciones y Actividad reciente queden completos.',
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
