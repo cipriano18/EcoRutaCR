@@ -52,7 +52,7 @@ class _DashboardStatisticsSectionState
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 760),
               child: Text(
-                'Monitoreo de crecimiento, actividad y contenido publicado en EcoRutaCR.',
+                'Monitoreo del crecimiento, la actividad y el contenido publicado en EcoRutaCR.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
@@ -75,7 +75,7 @@ class _DashboardStatisticsSectionState
                               child: DashboardSectionCard(
                                 title: 'Comparativo general',
                                 subtitle:
-                                    'Conteo actual por modulo visible dentro del panel, usando clientes, administradores, rutas y placeholders en cero para colecciones pendientes.',
+                                    'Conteo actual por módulo visible dentro del panel, utilizando clientes, administradores, rutas y valores en cero para colecciones pendientes.',
                                 child: barData.isNotEmpty
                                     ? DashboardBarChart(data: barData)
                                     : EmptyStatisticsState(
@@ -91,17 +91,17 @@ class _DashboardStatisticsSectionState
                             Expanded(
                               flex: 2,
                               child: DashboardSectionCard(
-                                title: 'Distribucion de rutas',
+                                title: 'Distribución de rutas',
                                 subtitle:
-                                    'Participacion estimada por tipo de actividad dentro de las rutas publicas visibles.',
+                                    'Participación estimada por tipo de actividad dentro de las rutas públicas visibles.',
                                 child: pieData.isNotEmpty
                                     ? DashboardPieChart(data: pieData)
                                     : EmptyStatisticsState(
                                         label:
                                             snapshot.connectionState ==
                                                 ConnectionState.waiting
-                                            ? 'Cargando distribucion de rutas...'
-                                            : 'Sin datos disponibles para la distribucion.',
+                                            ? 'Cargando distribución de rutas...'
+                                            : 'Sin datos disponibles para la distribución.',
                                       ),
                               ),
                             ),
@@ -118,7 +118,7 @@ class _DashboardStatisticsSectionState
                               child: DashboardSectionCard(
                                 title: 'Tendencia de actividad',
                                 subtitle:
-                                    'Creacion de rutas durante los ultimos seis meses registrados en la plataforma.',
+                                    'Creación de rutas durante los últimos seis meses registrados en la plataforma.',
                                 child: lineData.isNotEmpty
                                     ? DashboardLineChart(data: lineData)
                                     : EmptyStatisticsState(
@@ -155,24 +155,24 @@ class _DashboardStatisticsSectionState
                     ),
                     const SizedBox(height: 20),
                     DashboardSectionCard(
-                      title: 'Distribucion de rutas',
+                      title: 'Distribución de rutas',
                       subtitle:
-                          'Participacion estimada por tipo de actividad dentro de las rutas publicas visibles.',
+                          'Participación estimada por tipo de actividad dentro de las rutas públicas visibles.',
                       child: pieData.isNotEmpty
                           ? DashboardPieChart(data: pieData)
                           : EmptyStatisticsState(
                               label:
                                   snapshot.connectionState ==
                                       ConnectionState.waiting
-                                  ? 'Cargando distribucion de rutas...'
-                                  : 'Sin datos disponibles para la distribucion.',
+                                  ? 'Cargando distribución de rutas...'
+                                  : 'Sin datos disponibles para la distribución.',
                             ),
                     ),
                     const SizedBox(height: 20),
                     DashboardSectionCard(
                       title: 'Tendencia de actividad',
                       subtitle:
-                          'Creacion de rutas durante los ultimos seis meses registrados en la plataforma.',
+                          'Creación de rutas durante los últimos seis meses registrados en la plataforma.',
                       child: lineData.isNotEmpty
                           ? DashboardLineChart(data: lineData)
                           : EmptyStatisticsState(
@@ -192,9 +192,9 @@ class _DashboardStatisticsSectionState
               DashboardSectionCard(
                 title: 'Lectura parcial',
                 subtitle:
-                    'La vista encontro un problema leyendo Firebase y mantuvo datos de respaldo para no romper el dashboard.',
+                    'La vista encontró un problema leyendo Firebase y mantuvo datos de respaldo para no afectar el dashboard.',
                 child: Text(
-                  'Revisa la consola del navegador o terminal para ver el detalle del error y confirmar permisos, nombres de campos y documentos disponibles.',
+                  'Revisa la consola del navegador o la terminal para ver el detalle del error y confirmar permisos, nombres de campos y documentos disponibles.',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
