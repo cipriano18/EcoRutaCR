@@ -10,10 +10,14 @@ class DashboardHomeSnapshot {
     required this.totalAdmins,
     required this.totalAds,
     required this.totalPublicRoutes,
-    required this.operationCards,
-    required this.highlights,
-    required this.recentActivity,
-  });
+    List<DashboardOperationalCardData>? operationCards,
+    List<(String, String)>? highlights,
+    List<DashboardAdInteractionData>? topAdInteractions,
+    List<DashboardActivityItem>? recentActivity,
+  }) : operationCards = operationCards ?? const <DashboardOperationalCardData>[],
+       highlights = highlights ?? const <(String, String)>[],
+       topAdInteractions = topAdInteractions ?? const <DashboardAdInteractionData>[],
+       recentActivity = recentActivity ?? const <DashboardActivityItem>[];
 
   final int totalSponsors;
   final int totalClients;
@@ -22,6 +26,7 @@ class DashboardHomeSnapshot {
   final int totalPublicRoutes;
   final List<DashboardOperationalCardData> operationCards;
   final List<(String, String)> highlights;
+  final List<DashboardAdInteractionData> topAdInteractions;
   final List<DashboardActivityItem> recentActivity;
 }
 
@@ -37,6 +42,18 @@ class DashboardOperationalCardData {
   final String value;
   final String subtitle;
   final Color accentColor;
+}
+
+class DashboardAdInteractionData {
+  const DashboardAdInteractionData({
+    required this.adTitle,
+    required this.sponsorName,
+    required this.clickCount,
+  });
+
+  final String adTitle;
+  final String sponsorName;
+  final int clickCount;
 }
 
 class DashboardHomeService {
@@ -141,6 +158,7 @@ class DashboardHomeService {
         totalPublicRoutes: totalPublicRoutes,
         operationCards: operationCards,
         highlights: highlights,
+        topAdInteractions: _buildMockAdInteractions(),
         recentActivity: recentActivity,
       );
     } catch (error, stackTrace) {
@@ -255,40 +273,65 @@ class DashboardHomeService {
   }) {
     return [
       DashboardActivityItem(
-        title: 'Nuevo cliente detectado',
-        detail: latestUserName != null
-            ? '$latestUserName aparece como registro reciente en users.'
-            : 'No fue posible identificar un cliente reciente con nombre visible.',
-        timeLabel: 'Coleccion users',
+        title: 'Nuevo cliente registrado',
+        detail: latestUserName ?? 'Aun no hay un cliente reciente para mostrar.',
+        timeLabel: '',
         icon: Icons.people_alt_outlined,
         accentColor: dashboardSoftGreen,
       ),
       DashboardActivityItem(
         title: 'Administrador reciente',
-        detail: latestAdminName != null
-            ? '$latestAdminName figura dentro de los admins mas recientes.'
-            : 'No fue posible identificar un administrador reciente con nombre visible.',
-        timeLabel: 'Coleccion admins',
+        detail:
+            latestAdminName ?? 'Aun no hay un administrador reciente para mostrar.',
+        timeLabel: '',
         icon: Icons.admin_panel_settings_outlined,
         accentColor: dashboardBrandGreen,
       ),
       DashboardActivityItem(
         title: 'Ruta publica reciente',
-        detail: latestRouteName != null
-            ? '$latestRouteName aparece entre los documentos recientes de routes.'
-            : 'La coleccion routes no expuso un nombre legible para actividad reciente.',
-        timeLabel: 'Coleccion routes',
+        detail:
+            latestRouteName ?? 'Aun no hay una ruta publica reciente para mostrar.',
+        timeLabel: '',
         icon: Icons.route_outlined,
         accentColor: dashboardAccentOrange,
       ),
       DashboardActivityItem(
         title: 'Actividad favorita observada',
-        detail: favoriteActivity != null
-            ? 'La preferencia mas visible en users es $favoriteActivity.'
-            : 'Aun no hay suficientes datos para inferir una actividad favorita.',
-        timeLabel: 'Lectura parcial',
+        detail:
+            favoriteActivity ?? 'Aun no hay una actividad favorita para mostrar.',
+        timeLabel: '',
         icon: Icons.insights_outlined,
         accentColor: dashboardSupportGreen,
+      ),
+    ];
+  }
+
+  List<DashboardAdInteractionData> _buildMockAdInteractions() {
+    return const [
+      DashboardAdInteractionData(
+        adTitle: 'Promo Verde Urbana',
+        sponsorName: 'Verde Urbano',
+        clickCount: 1482,
+      ),
+      DashboardAdInteractionData(
+        adTitle: 'Explora San Jose en Bici',
+        sponsorName: 'BiciCiudad',
+        clickCount: 1316,
+      ),
+      DashboardAdInteractionData(
+        adTitle: 'Café de Ruta Matutina',
+        sponsorName: 'Cafe Sendero',
+        clickCount: 1189,
+      ),
+      DashboardAdInteractionData(
+        adTitle: 'Descuento Eco Fin de Semana',
+        sponsorName: 'Mercado Natural CR',
+        clickCount: 974,
+      ),
+      DashboardAdInteractionData(
+        adTitle: 'Parada Segura Nocturna',
+        sponsorName: 'Luz Vial',
+        clickCount: 822,
       ),
     ];
   }

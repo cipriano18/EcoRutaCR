@@ -63,6 +63,121 @@ class MobileOverviewBlock extends StatelessWidget {
   }
 }
 
+class HomeAdInteractionsList extends StatelessWidget {
+  const HomeAdInteractionsList({required this.items, super.key});
+
+  final List<DashboardAdInteractionData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const HomeEmptyState(
+        label: 'Sin interacciones de anuncios disponibles por ahora.',
+      );
+    }
+
+    return Column(
+      children: items
+          .asMap()
+          .entries
+          .map(
+            (entry) => _HomeAdInteractionTile(
+              item: entry.value,
+              rank: entry.key + 1,
+              isLast: entry.key == items.length - 1,
+            ),
+          )
+          .toList(),
+    );
+  }
+}
+
+class HomeMetricSections extends StatelessWidget {
+  const HomeMetricSections({
+    required this.sponsorshipMetrics,
+    required this.userMetrics,
+    required this.routeMetrics,
+    super.key,
+  });
+
+  final List<DashboardMetricData> sponsorshipMetrics;
+  final List<DashboardMetricData> userMetrics;
+  final List<DashboardMetricData> routeMetrics;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = [
+      _HomeMetricSectionData(
+        title: 'Patrocinio',
+        metrics: sponsorshipMetrics,
+      ),
+      _HomeMetricSectionData(
+        title: 'Usuarios',
+        metrics: userMetrics,
+      ),
+      _HomeMetricSectionData(
+        title: 'Rutas',
+        metrics: routeMetrics,
+      ),
+    ].where((section) => section.metrics.isNotEmpty).toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < 960;
+
+        if (stacked) {
+          return Column(
+            children: sections
+                .asMap()
+                .entries
+                .map(
+                  (entry) => Padding(
+                    padding: EdgeInsets.only(
+                      bottom: entry.key == sections.length - 1 ? 0 : 20,
+                    ),
+                    child: _HomeMetricSection(
+                      title: entry.value.title,
+                      metrics: entry.value.metrics,
+                    ),
+                  ),
+                )
+                .toList(),
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: sections
+              .asMap()
+              .entries
+              .expand((entry) sync* {
+                final section = entry.value;
+                yield Expanded(
+                  flex: section.metrics.length,
+                  child: _HomeMetricSection(
+                    title: section.title,
+                    metrics: section.metrics,
+                  ),
+                );
+
+                if (entry.key != sections.length - 1) {
+                  yield Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Container(
+                      width: 1,
+                      height: 220,
+                      color: _homeBorder(context),
+                    ),
+                  );
+                }
+              })
+              .toList(),
+        );
+      },
+    );
+  }
+}
+
 class HomeEmptyState extends StatelessWidget {
   const HomeEmptyState({required this.label, super.key});
 
@@ -90,6 +205,80 @@ class HomeEmptyState extends StatelessWidget {
       child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
     );
   }
+}
+
+class _HomeMetricSection extends StatelessWidget {
+  const _HomeMetricSection({required this.title, required this.metrics});
+
+  final String title;
+  final List<DashboardMetricData> metrics;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: _homePrimaryText(context),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 16),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final singleColumn = constraints.maxWidth < 420 && metrics.length > 1;
+
+            if (singleColumn) {
+              return Column(
+                children: metrics
+                    .asMap()
+                    .entries
+                    .map(
+                      (entry) => Padding(
+                        padding: EdgeInsets.only(
+                          bottom: entry.key == metrics.length - 1 ? 0 : 16,
+                        ),
+                        child: DashboardMetricCard(metric: entry.value),
+                      ),
+                    )
+                    .toList(),
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: metrics
+                  .asMap()
+                  .entries
+                  .map(
+                    (entry) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: entry.key == metrics.length - 1 ? 0 : 16,
+                        ),
+                        child: DashboardMetricCard(metric: entry.value),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeMetricSectionData {
+  const _HomeMetricSectionData({
+    required this.title,
+    required this.metrics,
+  });
+
+  final String title;
+  final List<DashboardMetricData> metrics;
 }
 
 class HomeInfoCard extends StatelessWidget {
@@ -220,6 +409,94 @@ class RecommendationLine extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeAdInteractionTile extends StatelessWidget {
+  const _HomeAdInteractionTile({
+    required this.item,
+    required this.rank,
+    required this.isLast,
+  });
+
+  final DashboardAdInteractionData item;
+  final int rank;
+  final bool isLast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _homeSoftSurface(context),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _homeBorder(context)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: dashboardAccentOrange.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: dashboardAccentOrange.withValues(alpha: 0.22),
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '$rank',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: dashboardAccentOrange,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.adTitle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: _homePrimaryText(context),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.sponsorName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: _homePrimaryText(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${item.clickCount}',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(fontSize: 24),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'clicks',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+            ],
           ),
         ],
       ),

@@ -344,21 +344,29 @@ class DashboardMetricCard extends StatelessWidget {
 
   final DashboardMetricData metric;
 
+  static const double _cardHeight = 196;
+  static const double _footerHeight = 40;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 220,
+      height: _cardHeight,
       child: DashboardSurfaceCard(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
                     metric.title,
                     style: Theme.of(context).textTheme.labelLarge,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -382,15 +390,22 @@ class DashboardMetricCard extends StatelessWidget {
                 context,
               ).textTheme.headlineMedium?.copyWith(fontSize: 30),
             ),
-            const SizedBox(height: 10),
-            if (metric.changeLabel != null)
-              DashboardStatusChip(
-                label: metric.changeLabel!,
-                color: dashboardSupportGreen,
-                backgroundColor: _isDarkMode(context)
-                    ? const Color(0xFF17352A)
-                    : const Color(0xFFF3F8F5),
-              ),
+            const Spacer(),
+            SizedBox(
+              height: _footerHeight,
+              child: metric.changeLabel != null
+                  ? Align(
+                      alignment: Alignment.bottomLeft,
+                      child: DashboardStatusChip(
+                        label: metric.changeLabel!,
+                        color: dashboardSupportGreen,
+                        backgroundColor: _isDarkMode(context)
+                            ? const Color(0xFF17352A)
+                            : const Color(0xFFF3F8F5),
+                      ),
+                    )
+                  : null,
+            ),
           ],
         ),
       ),
@@ -404,6 +419,7 @@ class DashboardSectionCard extends StatelessWidget {
     required this.subtitle,
     required this.child,
     this.actions,
+    this.expandChild = false,
     super.key,
   });
 
@@ -411,6 +427,7 @@ class DashboardSectionCard extends StatelessWidget {
   final String subtitle;
   final Widget child;
   final Widget? actions;
+  final bool expandChild;
 
   @override
   Widget build(BuildContext context) {
@@ -441,7 +458,7 @@ class DashboardSectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          child,
+          if (expandChild) Expanded(child: child) else child,
         ],
       ),
     );
@@ -544,6 +561,7 @@ class DashboardRecentActivityList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: items
           .asMap()
           .entries
@@ -702,37 +720,50 @@ class _LegendChip extends StatelessWidget {
 class _RecentActivityTile extends StatelessWidget {
   const _RecentActivityTile({required this.item, required this.isLast});
 
+  static const double _leadingWidth = 54;
+
   final DashboardActivityItem item;
   final bool isLast;
 
   @override
   Widget build(BuildContext context) {
+    final hasTimeLabel = item.timeLabel.trim().isNotEmpty;
+
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 18),
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: item.accentColor.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(item.icon, color: item.accentColor),
-                ),
-                if (!isLast)
-                  Expanded(
+            SizedBox(
+              width: _leadingWidth,
+              child: Column(
+                children: [
+                  Align(
+                    alignment: Alignment.topCenter,
                     child: Container(
-                      width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      color: _dashboardBorderColor(context),
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: item.accentColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(item.icon, color: item.accentColor),
                     ),
                   ),
-              ],
+                  if (!isLast)
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: Container(
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          color: _dashboardBorderColor(context),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -756,10 +787,11 @@ class _RecentActivityTile extends StatelessWidget {
                             ).textTheme.titleMedium?.copyWith(fontSize: 15),
                           ),
                         ),
-                        Text(
-                          item.timeLabel,
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
+                        if (hasTimeLabel)
+                          Text(
+                            item.timeLabel,
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                       ],
                     ),
                     const SizedBox(height: 8),

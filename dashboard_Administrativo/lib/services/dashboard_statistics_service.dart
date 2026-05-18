@@ -74,9 +74,7 @@ class DashboardStatisticsService {
         const ['fullName', 'name'],
       );
       final monthlyTrend = _buildMonthlyTrend(
-        users: usersSnapshot.docs,
-        admins: adminsSnapshot.docs,
-        publicRoutes: publicRoutes,
+        routes: routesSnapshot.docs,
       );
 
       debugPrint(
@@ -404,9 +402,7 @@ class DashboardStatisticsService {
   }
 
   List<DashboardLineDatum> _buildMonthlyTrend({
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> users,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> admins,
-    required List<QueryDocumentSnapshot<Map<String, dynamic>>> publicRoutes,
+    required List<QueryDocumentSnapshot<Map<String, dynamic>>> routes,
   }) {
     final now = DateTime.now();
     final months = List<DateTime>.generate(
@@ -431,9 +427,7 @@ class DashboardStatisticsService {
       }
     }
 
-    addCounts(users);
-    addCounts(admins);
-    addCounts(publicRoutes);
+    addCounts(routes);
 
     final data = months
         .map(

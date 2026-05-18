@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../services/dashboard_home_service.dart';
-import 'home_support_widgets.dart';
 import '../shared/dashboard_mock_ui.dart';
+import 'home_support_widgets.dart';
 
 class DashboardHomeSection extends StatefulWidget {
   const DashboardHomeSection({super.key});
@@ -24,6 +24,10 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
 
   @override
   Widget build(BuildContext context) {
+    final dividerColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF1B4332)
+        : dashboardBorder;
+
     return FutureBuilder<DashboardHomeSnapshot>(
       future: _snapshotFuture,
       builder: (context, snapshot) {
@@ -32,144 +36,109 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
 
         final metrics = _buildMetrics(data);
-        final operationCards =
-            data?.operationCards ?? const <DashboardOperationalCardData>[];
-        final highlights = data?.highlights ?? const <(String, String)>[];
+        final sponsorshipMetrics = [metrics[0], metrics[3]];
+        final userMetrics = [metrics[1], metrics[2]];
+        final routeMetrics = [metrics[4]];
+        final topAdInteractions =
+            data?.topAdInteractions ?? const <DashboardAdInteractionData>[];
         final recentActivity =
             data?.recentActivity ?? const <DashboardActivityItem>[];
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DashboardHeroCard(
-              title: 'Dashboard General',
-              subtitle:
-                  'Vista principal del panel administrativo EcoRutaCR con indicadores operativos, estado institucional y actividad reciente.',
-              badges: [
-                const DashboardHeroBadge(
-                  label: 'Panel principal',
-                  icon: Icons.home_outlined,
-                ),
-                DashboardHeroBadge(
-                  label: isLoading
-                      ? 'Cargando Firestore'
-                      : hasError
-                      ? 'Lectura parcial'
-                      : 'Datos en tiempo real',
-                  icon: isLoading
-                      ? Icons.sync_rounded
-                      : hasError
-                      ? Icons.warning_amber_rounded
-                      : Icons.cloud_done_outlined,
-                ),
-              ],
+            Text(
+              'Dashboard General',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineLarge?.copyWith(fontSize: 34),
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Text(
+                'Resumen operativo y actividad reciente del ecosistema EcoRutaCR.',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
             ),
             const SizedBox(height: 24),
-            DashboardMetricGrid(metrics: metrics),
+            Divider(height: 1, thickness: 1, color: dividerColor),
+            const SizedBox(height: 24),
+            HomeMetricSections(
+              sponsorshipMetrics: sponsorshipMetrics,
+              userMetrics: userMetrics,
+              routeMetrics: routeMetrics,
+            ),
             const SizedBox(height: 24),
             LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= 860;
 
                 if (wide) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: DashboardSectionCard(
-                          title: 'Resumen operativo',
-                          subtitle:
-                              'Panorama de lectura real sobre clientes, administradores y rutas públicas disponibles en Firestore.',
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: operationCards.isNotEmpty
-                                        ? HomeInfoCard(
-                                            title: operationCards[0].title,
-                                            value: operationCards[0].value,
-                                            subtitle:
-                                                operationCards[0].subtitle,
-                                            accentColor:
-                                                operationCards[0].accentColor,
-                                          )
-                                        : HomeEmptyState(
-                                            label: isLoading
-                                                ? 'Cargando resumen operativo...'
-                                                : 'Sin resumen operativo disponible.',
-                                          ),
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: DashboardSectionCard(
+                            title: 'Interacciones',
+                            subtitle:
+                                'Lista de anuncios mas populares en EcoRutaCR.',
+                            child: topAdInteractions.isNotEmpty
+                                ? HomeAdInteractionsList(
+                                    items: topAdInteractions,
+                                  )
+                                : HomeEmptyState(
+                                    label: isLoading
+                                        ? 'Preparando interacciones de anuncios...'
+                                        : 'Sin interacciones de anuncios disponibles.',
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: operationCards.length > 1
-                                        ? HomeInfoCard(
-                                            title: operationCards[1].title,
-                                            value: operationCards[1].value,
-                                            subtitle:
-                                                operationCards[1].subtitle,
-                                            accentColor:
-                                                operationCards[1].accentColor,
-                                          )
-                                        : HomeEmptyState(
-                                            label: isLoading
-                                                ? 'Cargando rutas públicas...'
-                                                : 'Sin datos de rutas públicas disponibles.',
-                                          ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              highlights.isNotEmpty
-                                  ? HomeHighlightsStrip(items: highlights)
-                                  : HomeEmptyState(
-                                      label: isLoading
-                                          ? 'Cargando lecturas destacadas...'
-                                          : 'Sin lecturas destacadas disponibles.',
-                                    ),
-                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        flex: 2,
-                        child: DashboardSectionCard(
-                          title: 'Actividad reciente',
-                          subtitle:
-                              'Eventos inferidos desde las colecciones reales disponibles del proyecto.',
-                          child: recentActivity.isNotEmpty
-                              ? DashboardRecentActivityList(
-                                  items: recentActivity,
-                                )
-                              : HomeEmptyState(
-                                  label: isLoading
-                                      ? 'Cargando actividad reciente...'
-                                      : 'Sin actividad reciente disponible.',
-                                ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          flex: 3,
+                          child: DashboardSectionCard(
+                            title: 'Actividad reciente',
+                            subtitle:
+                                'Resumen de movimientos y registros recientes dentro de la plataforma.',
+                            expandChild: true,
+                            child: recentActivity.isNotEmpty
+                                ? DashboardRecentActivityList(
+                                    items: recentActivity,
+                                  )
+                                : HomeEmptyState(
+                                    label: isLoading
+                                        ? 'Cargando actividad reciente...'
+                                        : 'Sin actividad reciente disponible.',
+                                  ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 }
 
                 return Column(
                   children: [
                     DashboardSectionCard(
-                      title: 'Resumen operativo',
+                      title: 'Interacciones',
                       subtitle:
-                          'Panorama de lectura real sobre clientes, administradores y rutas públicas disponibles en Firestore.',
-                      child: MobileOverviewBlock(
-                        operationCards: operationCards,
-                        highlights: highlights,
-                      ),
+                          'Lista de anuncios mas populares en EcoRutaCR.',
+                      child: topAdInteractions.isNotEmpty
+                          ? HomeAdInteractionsList(items: topAdInteractions)
+                          : HomeEmptyState(
+                              label: isLoading
+                                  ? 'Preparando interacciones de anuncios...'
+                                  : 'Sin interacciones de anuncios disponibles.',
+                            ),
                     ),
                     const SizedBox(height: 20),
                     DashboardSectionCard(
                       title: 'Actividad reciente',
                       subtitle:
-                          'Eventos inferidos desde las colecciones reales disponibles del proyecto.',
+                          'Resumen de movimientos y registros recientes dentro de la plataforma.',
                       child: recentActivity.isNotEmpty
                           ? DashboardRecentActivityList(items: recentActivity)
                           : HomeEmptyState(
@@ -187,13 +156,13 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
               DashboardSectionCard(
                 title: 'Siguiente implementacion recomendada',
                 subtitle:
-                    'Esto es lo que convendria agregar para que Resumen operativo y Actividad reciente queden completos.',
+                    'Esto es lo que convendria agregar para que Interacciones y Actividad reciente queden completos.',
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RecommendationLine(
                       text:
-                          'Agregar en routes campos estables como name, createdAt, activityType, isPublic, originLabel y destinationLabel.',
+                          'Agregar una coleccion de anuncios con titulo, patrocinador, clicks y estado para reemplazar la lista mock por datos reales.',
                     ),
                     RecommendationLine(
                       text:
@@ -201,7 +170,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
                     ),
                     RecommendationLine(
                       text:
-                          'Persistir estatus o moderacion de rutas públicas para poder mostrar aprobaciones, bloqueos y revisiones reales.',
+                          'Persistir estatus o moderacion de rutas publicas para poder mostrar aprobaciones, bloqueos y revisiones reales.',
                     ),
                   ],
                 ),
@@ -218,7 +187,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
       DashboardMetricData(
         title: 'Total de patrocinadores',
         value: '${data?.totalSponsors ?? 0}',
-        changeLabel: 'Próximamente',
+        changeLabel: 'Proximamente',
         icon: Icons.handshake_outlined,
         accentColor: dashboardSoftGreen,
       ),
@@ -237,12 +206,12 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
       DashboardMetricData(
         title: 'Publicidades activas',
         value: '${data?.totalAds ?? 0}',
-        changeLabel: 'Próximamente',
+        changeLabel: 'Proximamente',
         icon: Icons.campaign_outlined,
         accentColor: dashboardAccentOrange,
       ),
       DashboardMetricData(
-        title: 'Total de rutas públicas',
+        title: 'Total de rutas publicas',
         value: '${data?.totalPublicRoutes ?? 0}',
         icon: Icons.route_outlined,
         accentColor: dashboardSoftGreen,
