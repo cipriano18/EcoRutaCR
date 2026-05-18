@@ -327,7 +327,7 @@ class DashboardReportsService {
 
     return [
       DashboardActivityItem(
-        title: 'Ruta publica reciente',
+        title: 'Ruta pública reciente',
         detail:
             '${rows.first.primary} figura entre las rutas públicas mas recientes.',
         timeLabel: rows.first.activity,
@@ -354,7 +354,7 @@ class DashboardReportsService {
     if (visibility is String) {
       final normalized = visibility.trim().toLowerCase();
       return normalized == 'public' ||
-          normalized == 'publica' ||
+          normalized == 'pública' ||
           normalized == 'pública';
     }
 

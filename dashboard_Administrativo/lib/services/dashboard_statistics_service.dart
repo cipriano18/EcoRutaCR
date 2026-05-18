@@ -162,7 +162,7 @@ class DashboardStatisticsService {
             color: dashboardSoftGreen,
           ),
           DashboardStatisticsHighlight(
-            title: 'Ruta publica mas reciente',
+            title: 'Ruta pública mas reciente',
             value: latestRouteName ?? 'Sin nombre visible',
             badge: totalPublicRoutes > 0
                 ? '$totalPublicRoutes rutas públicas'
@@ -212,7 +212,7 @@ class DashboardStatisticsService {
     if (visibility is String) {
       final normalized = visibility.trim().toLowerCase();
       return normalized == 'public' ||
-          normalized == 'publica' ||
+          normalized == 'pública' ||
           normalized == 'p\u00fablica';
     }
 

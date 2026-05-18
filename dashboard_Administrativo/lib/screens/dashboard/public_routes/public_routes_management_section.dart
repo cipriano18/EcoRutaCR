@@ -186,7 +186,7 @@ class _PublicRoutesManagementSectionState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          title: const Text('Editar ruta publica'),
+          title: const Text('Editar ruta pública'),
           content: SizedBox(
             width: 460,
             child: Column(
@@ -248,7 +248,7 @@ class _PublicRoutesManagementSectionState
       }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Ruta publica actualizada correctamente.'),
+          content: Text('Ruta pública actualizada correctamente.'),
         ),
       );
     } catch (error) {
@@ -269,8 +269,8 @@ class _PublicRoutesManagementSectionState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
-          title: const Text('Eliminar ruta publica'),
-          content: const Text('¿Desea eliminar esta ruta publica?'),
+          title: const Text('Eliminar ruta pública'),
+          content: const Text('¿Desea eliminar esta ruta pública?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -299,7 +299,7 @@ class _PublicRoutesManagementSectionState
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ruta publica eliminada correctamente.')),
+        const SnackBar(content: Text('Ruta pública eliminada correctamente.')),
       );
     } catch (error) {
       if (!mounted) {
@@ -340,7 +340,7 @@ class _PublicRoutesManagementSectionState
                       color: dashboardBrandGreen,
                     ),
                     const DashboardStatusChip(
-                      label: 'Publica',
+                      label: 'pública',
                       color: dashboardSoftGreen,
                     ),
                   ],

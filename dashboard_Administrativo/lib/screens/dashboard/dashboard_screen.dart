@@ -782,7 +782,7 @@ class _SponsorsModule extends StatelessWidget {
         accentColor: Color(0xFFFF7043),
         bullets: [
           'Asociar publicidad a un patrocinador',
-          'Definir vigencia o estado de publicación',
+          'Definir vigencia o estado de públicación',
           'Preparar assets y copys por anuncio',
         ],
       );

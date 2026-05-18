@@ -128,7 +128,7 @@ class DashboardHomeService {
           title: 'Rutas públicas registradas',
           value: '$totalPublicRoutes',
           subtitle: latestRouteName != null
-              ? 'Ultima ruta publica observada: $latestRouteName.'
+              ? 'Ultima ruta pública observada: $latestRouteName.'
               : 'Conteo real de rutas públicas en la colección routes.',
           accentColor: dashboardAccentOrange,
         ),
@@ -140,7 +140,7 @@ class DashboardHomeService {
           favoriteActivity ?? 'Sin datos suficientes',
         ),
         ('Administrador mas reciente', latestAdminName ?? 'Sin datos recientes'),
-        ('Ultima ruta publica', latestRouteName ?? 'Sin nombre disponible'),
+        ('Ultima ruta pública', latestRouteName ?? 'Sin nombre disponible'),
       ];
 
       final recentActivity = _buildRecentActivity(
@@ -208,7 +208,7 @@ class DashboardHomeService {
     if (visibility is String) {
       final normalized = visibility.trim().toLowerCase();
       return normalized == 'public' ||
-          normalized == 'publica' ||
+          normalized == 'pública' ||
           normalized == 'pública';
     }
 
@@ -288,9 +288,9 @@ class DashboardHomeService {
         accentColor: dashboardBrandGreen,
       ),
       DashboardActivityItem(
-        title: 'Ruta publica reciente',
+        title: 'Ruta pública reciente',
         detail:
-            latestRouteName ?? 'Aun no hay una ruta publica reciente para mostrar.',
+            latestRouteName ?? 'Aun no hay una ruta pública reciente para mostrar.',
         timeLabel: '',
         icon: Icons.route_outlined,
         accentColor: dashboardAccentOrange,

@@ -185,7 +185,7 @@ class PublicRouteCard extends StatelessWidget {
                 color: _routeBadgeColor(context),
               ),
               const DashboardStatusChip(
-                label: 'Publica',
+                label: 'pública',
                 color: dashboardSoftGreen,
               ),
             ],

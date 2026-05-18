@@ -340,7 +340,7 @@ final dashboardReportConfigs = {
       DashboardActivityItem(
         title: 'Anuncio reactivado',
         detail:
-            'La campana costera volvió a publicarse con nuevo material visual.',
+            'La campaña costera volvió a publicarse con nuevo material visual.',
         timeLabel: 'Hace 22 min',
         icon: Icons.autorenew_rounded,
         accentColor: dashboardSoftGreen,

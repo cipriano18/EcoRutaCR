@@ -52,7 +52,7 @@ class _DashboardStatisticsSectionState
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 760),
               child: Text(
-                'Monitoreo del crecimiento, la actividad y el contenido publicado en EcoRutaCR.',
+                'Monitoreo del crecimiento, la actividad y el contenido públicado en EcoRutaCR.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ),
