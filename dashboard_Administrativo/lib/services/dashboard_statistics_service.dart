@@ -86,7 +86,7 @@ class DashboardStatisticsService {
           DashboardMetricData(
             title: 'Total de patrocinadores',
             value: '0',
-            changeLabel: 'Sin coleccion disponible',
+            changeLabel: 'Sin colección disponible',
             icon: Icons.handshake_outlined,
             accentColor: dashboardSoftGreen,
           ),
@@ -95,7 +95,7 @@ class DashboardStatisticsService {
             value: '$totalClients',
             changeLabel: latestUserName != null
                 ? 'Ultimo visible: $latestUserName'
-                : 'Coleccion users',
+                : 'Colección users',
             icon: Icons.groups_2_outlined,
             accentColor: dashboardBrandGreen,
           ),
@@ -104,14 +104,14 @@ class DashboardStatisticsService {
             value: '$totalAdmins',
             changeLabel: latestAdminName != null
                 ? 'Ultimo visible: $latestAdminName'
-                : 'Coleccion admins',
+                : 'Colección admins',
             icon: Icons.admin_panel_settings_outlined,
             accentColor: dashboardSupportGreen,
           ),
           DashboardMetricData(
             title: 'Publicidades activas',
             value: '0',
-            changeLabel: 'Sin coleccion disponible',
+            changeLabel: 'Sin colección disponible',
             icon: Icons.campaign_outlined,
             accentColor: dashboardAccentOrange,
           ),
@@ -120,7 +120,7 @@ class DashboardStatisticsService {
             value: '$totalPublicRoutes',
             changeLabel: latestRouteName != null
                 ? 'Ultima visible: $latestRouteName'
-                : 'Coleccion routes',
+                : 'Colección routes',
             icon: Icons.route_outlined,
             accentColor: dashboardSoftGreen,
           ),
@@ -489,7 +489,7 @@ class DashboardStatisticsService {
       return 'La base de clientes supera el catalogo actual de rutas públicas.';
     }
 
-    return 'La operacion muestra distribucion estable entre cuentas y rutas visibles.';
+    return 'La operación muestra distribución estable entre cuentas y rutas visibles.';
   }
 
   String _buildOperationalBadge({

@@ -152,7 +152,7 @@ class _CreateAdminDialogState extends State<CreateAdminDialog> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: 'Contrasena',
+                  hintText: 'Contraseña',
                   filled: true,
                   fillColor: _isDarkMode(context)
                       ? const Color(0xFF132F25)
@@ -164,11 +164,11 @@ class _CreateAdminDialogState extends State<CreateAdminDialog> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'La contrasena es obligatoria';
+                    return 'La contraseña es obligatoria';
                   }
 
                   if (value.trim().length < 6) {
-                    return 'Minimo 6 caracteres';
+                    return 'Mínimo 6 caracteres';
                   }
 
                   return null;

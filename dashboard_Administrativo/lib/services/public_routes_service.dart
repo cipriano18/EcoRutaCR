@@ -33,7 +33,7 @@ class PublicRouteAdminModel {
     return PublicRouteAdminModel(
       id: doc.id,
       title: _readString(data, ['title', 'name', 'routeName']) ?? 'Ruta sin titulo',
-      description: _readString(data, ['description']) ?? 'Sin descripcion',
+      description: _readString(data, ['description']) ?? 'Sin descripción',
       activityProfile:
           _readString(data, ['activityProfile', 'activityType']) ?? 'hiking',
       originLabel: _readNestedLabel(data['start']) ?? 'Origen no disponible',

@@ -59,7 +59,7 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
           onPressed: () => Navigator.of(context).pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text('Seleccionar ubicacion'),
+        title: const Text('Seleccionar ubicación'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -205,7 +205,7 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Busqueda no disponible');
+        throw Exception('Búsqueda no disponible');
       }
 
       final decoded = jsonDecode(response.body);
@@ -221,7 +221,7 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
       setState(() {
         _results = results;
         if (results.isEmpty) {
-          _searchError = 'No encontramos resultados para esa busqueda.';
+          _searchError = 'No encontramos resultados para esa búsqueda.';
         }
       });
     } catch (_) {
@@ -272,7 +272,7 @@ class _SearchToolbar extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 decoration: const InputDecoration(
-                  hintText: 'Buscar lugar, direccion o negocio',
+                  hintText: 'Buscar lugar, dirección o negocio',
                   prefixIcon: Icon(Icons.search_rounded),
                 ),
                 onSubmitted: (_) => onSearch(),
@@ -323,7 +323,7 @@ class _ResultsPanel extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  'Busca un lugar o toca el mapa para elegir la ubicacion.',
+                  'Busca un lugar o toca el mapa para elegir la ubicación.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),

@@ -84,7 +84,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
                           child: DashboardSectionCard(
                             title: 'Interacciones',
                             subtitle:
-                                'Lista de anuncios mas populares en EcoRutaCR.',
+                                'Lista de anuncios más populares en EcoRutaCR.',
                             child: topAdInteractions.isNotEmpty
                                 ? HomeAdInteractionsList(
                                     items: topAdInteractions,
@@ -154,7 +154,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
             if (hasError) ...[
               const SizedBox(height: 20),
               DashboardSectionCard(
-                title: 'Siguiente implementacion recomendada',
+                title: 'Siguiente implementación recomendada',
                 subtitle:
                     'Esto es lo que convendria agregar para que Interacciones y Actividad reciente queden completos.',
                 child: const Column(
@@ -162,15 +162,15 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
                   children: [
                     RecommendationLine(
                       text:
-                          'Agregar una coleccion de anuncios con titulo, patrocinador, clicks y estado para reemplazar la lista mock por datos reales.',
+                          'Agregar una colección de anuncios con título, patrocinador, clicks y estado para reemplazar la lista mock por datos reales.',
                     ),
                     RecommendationLine(
                       text:
-                          'Guardar eventos administrativos en una coleccion activity_logs para no inferir actividad solo a partir de documentos recientes.',
+                          'Guardar eventos administrativos en una colección activity_logs para no inferir actividad solo a partir de documentos recientes.',
                     ),
                     RecommendationLine(
                       text:
-                          'Persistir estatus o moderacion de rutas publicas para poder mostrar aprobaciones, bloqueos y revisiones reales.',
+                          'Persistir estatus o moderación de rutas públicas para poder mostrar aprobaciones, bloqueos y revisiones reales.',
                     ),
                   ],
                 ),
@@ -187,7 +187,7 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
       DashboardMetricData(
         title: 'Total de patrocinadores',
         value: '${data?.totalSponsors ?? 0}',
-        changeLabel: 'Proximamente',
+        changeLabel: 'Próximamente',
         icon: Icons.handshake_outlined,
         accentColor: dashboardSoftGreen,
       ),
@@ -206,12 +206,12 @@ class _DashboardHomeSectionState extends State<DashboardHomeSection> {
       DashboardMetricData(
         title: 'Publicidades activas',
         value: '${data?.totalAds ?? 0}',
-        changeLabel: 'Proximamente',
+        changeLabel: 'Próximamente',
         icon: Icons.campaign_outlined,
         accentColor: dashboardAccentOrange,
       ),
       DashboardMetricData(
-        title: 'Total de rutas publicas',
+        title: 'Total de rutas públicas',
         value: '${data?.totalPublicRoutes ?? 0}',
         icon: Icons.route_outlined,
         accentColor: dashboardSoftGreen,

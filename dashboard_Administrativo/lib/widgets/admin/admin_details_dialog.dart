@@ -64,7 +64,7 @@ class AdminDetailsDialog extends StatelessWidget {
               const SizedBox(height: 12),
               _InfoTile(label: 'Rol', value: admin.role),
               const SizedBox(height: 12),
-              _InfoTile(label: 'Fecha de creacion', value: createdAt),
+              _InfoTile(label: 'Fecha de creación', value: createdAt),
             ],
           ),
         ),

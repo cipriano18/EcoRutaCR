@@ -33,9 +33,9 @@ final dashboardReportConfigs = {
         accentColor: dashboardAccentOrange,
       ),
       DashboardReportMetric(
-        title: 'Ultimos registros',
+        title: 'Últimos registros',
         value: '48',
-        changeLabel: 'Ultimos 7 dias',
+        changeLabel: 'Últimos 7 días',
         icon: Icons.schedule_outlined,
         accentColor: dashboardSupportGreen,
       ),
@@ -49,7 +49,7 @@ final dashboardReportConfigs = {
     primaryColumnLabel: 'Usuario',
     secondaryColumnLabel: 'Correo',
     detailColumnLabel: 'Actividad',
-    activityColumnLabel: 'Ultimo acceso',
+    activityColumnLabel: 'Último acceso',
     showStatusColumn: false,
     rows: const [
       DashboardReportRow(
@@ -77,7 +77,7 @@ final dashboardReportConfigs = {
         actionLabel: 'Ver perfil',
       ),
       DashboardReportRow(
-        primary: 'Mario Chacon',
+        primary: 'Mario Chacón',
         secondary: 'mario@ecoruta.app',
         detail: 'Alta reciente',
         status: 'Activo',
@@ -87,7 +87,7 @@ final dashboardReportConfigs = {
       DashboardReportRow(
         primary: 'Laura Araya',
         secondary: 'laura@ecoruta.app',
-        detail: 'Validacion documental',
+        detail: 'Validación documental',
         status: 'Pendiente',
         activity: 'Hace 1 dia',
         actionLabel: 'Revisar',
@@ -97,18 +97,18 @@ final dashboardReportConfigs = {
         secondary: 'sofia@ecoruta.app',
         detail: 'Uso recurrente',
         status: 'Activo',
-        activity: 'Hace 2 dias',
+        activity: 'Hace 2 días',
         actionLabel: 'Ver perfil',
       ),
     ],
     asideTitle: 'Lecturas de usuarios',
     asideSubtitle:
-        'Indicadores complementarios sobre recurrencia, adopcion y comportamiento reciente.',
+        'Indicadores complementarios sobre recurrencia, adopción y comportamiento reciente.',
     timeline: const [
       DashboardActivityItem(
         title: 'Nuevo usuario validado',
         detail:
-            'Se completo el alta de una cuenta desde la ruta publica norte.',
+            'Se completo el alta de una cuenta desde la ruta pública norte.',
         timeLabel: 'Hace 9 min',
         icon: Icons.person_add_alt_1_outlined,
         accentColor: dashboardSoftGreen,
@@ -122,8 +122,8 @@ final dashboardReportConfigs = {
       ),
     ],
     highlights: const [
-      ('Region mas activa', 'San Jose Centro', dashboardSoftGreen),
-      ('Perfil mas comun', 'Usuario recurrente', dashboardBrandGreen),
+      ('Region más activa', 'San Jose Centro', dashboardSoftGreen),
+      ('Perfil más común', 'Usuario recurrente', dashboardBrandGreen),
       ('Canal de ingreso', 'Registro web', dashboardAccentOrange),
     ],
   ),
@@ -131,7 +131,7 @@ final dashboardReportConfigs = {
     title: 'Reporte de patrocinadores',
     shortLabel: 'Patrocinadores',
     description:
-        'Resumen ejecutivo de patrocinadores activos, categorias, campañas vigentes y relaciones comerciales recientes.',
+        'Resumen ejecutivo de patrocinadores activos, categorías, campañas vigentes y relaciones comerciales recientes.',
     icon: Icons.handshake_outlined,
     metrics: const [
       DashboardReportMetric(
@@ -142,7 +142,7 @@ final dashboardReportConfigs = {
         accentColor: dashboardSoftGreen,
       ),
       DashboardReportMetric(
-        title: 'Categorias',
+        title: 'Categorías',
         value: '14',
         changeLabel: 'Comercio y movilidad',
         icon: Icons.category_outlined,
@@ -158,7 +158,7 @@ final dashboardReportConfigs = {
       DashboardReportMetric(
         title: 'Patrocinadores recientes',
         value: '11',
-        changeLabel: 'Ultimos 30 dias',
+        changeLabel: 'Últimos 30 días',
         icon: Icons.new_releases_outlined,
         accentColor: dashboardSupportGreen,
       ),
@@ -167,13 +167,13 @@ final dashboardReportConfigs = {
       DashboardReportFilter(label: 'Todos', matches: matchAll),
       DashboardReportFilter(label: 'Activos', matches: matchesActivo),
       DashboardReportFilter(
-        label: 'Categoria',
+        label: 'Categoría',
         matches: matchesMovilidadOrRetail,
       ),
       DashboardReportFilter(label: 'Recientes', matches: matchesRecent),
     ],
     primaryColumnLabel: 'Patrocinador',
-    secondaryColumnLabel: 'Categoria',
+    secondaryColumnLabel: 'Categoría',
     detailColumnLabel: 'Campañas',
     activityColumnLabel: 'Actividad',
     showStatusColumn: true,
@@ -207,7 +207,7 @@ final dashboardReportConfigs = {
         secondary: 'Movilidad sostenible',
         detail: '6 campañas',
         status: 'Activo',
-        activity: 'Hace 1 dia',
+        activity: 'Hace 1 día',
         actionLabel: 'Ver ficha',
       ),
       DashboardReportRow(
@@ -215,31 +215,31 @@ final dashboardReportConfigs = {
         secondary: 'Servicios urbanos',
         detail: '2 campañas',
         status: 'Pendiente',
-        activity: 'Hace 2 dias',
+        activity: 'Hace 2 días',
         actionLabel: 'Revisar',
       ),
     ],
     asideTitle: 'Pulso comercial',
     asideSubtitle:
-        'Lecturas institucionales sobre categorias dominantes y dinamica de patrocinio.',
+        'Lecturas institucionales sobre categorías dominantes y dinámica de patrocinio.',
     timeline: const [
       DashboardActivityItem(
-        title: 'Campana renovada',
+        title: 'Campaña renovada',
         detail: 'Verde Urbano amplio su cobertura a 4 zonas nuevas.',
         timeLabel: 'Hace 18 min',
         icon: Icons.campaign_outlined,
         accentColor: dashboardAccentOrange,
       ),
       DashboardActivityItem(
-        title: 'Nueva categoria detectada',
-        detail: 'Se abrio una linea de patrocinio para servicios urbanos.',
+        title: 'Nueva categoría detectada',
+        detail: 'Se abrió una línea de patrocinio para servicios urbanos.',
         timeLabel: 'Hace 1 h',
         icon: Icons.category_outlined,
         accentColor: dashboardSoftGreen,
       ),
     ],
     highlights: const [
-      ('Categoria lider', 'Movilidad sostenible', dashboardSoftGreen),
+      ('Categoría líder', 'Movilidad sostenible', dashboardSoftGreen),
       ('Patrocinador destacado', 'Verde Urbano', dashboardBrandGreen),
       ('Cobertura promedio', '5.8 zonas', dashboardAccentOrange),
     ],
@@ -268,7 +268,7 @@ final dashboardReportConfigs = {
       DashboardReportMetric(
         title: 'Vencidas',
         value: '9',
-        changeLabel: 'Pendiente renovacion',
+        changeLabel: 'Pendiente renovación',
         icon: Icons.event_busy_outlined,
         accentColor: dashboardAccentOrange,
       ),
@@ -329,7 +329,7 @@ final dashboardReportConfigs = {
         secondary: 'BioMarket CR',
         detail: '14.6K vistas',
         status: 'Activa',
-        activity: 'Hace 2 dias',
+        activity: 'Hace 2 días',
         actionLabel: 'Analizar',
       ),
     ],

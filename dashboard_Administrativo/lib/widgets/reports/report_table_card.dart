@@ -63,7 +63,7 @@ class ReportTableCard extends StatelessWidget {
     return DashboardSectionCard(
       title: 'Tabla administrativa',
       subtitle:
-          'Consulta visual con busqueda, filtros, estados, acciones y paginacion para ${config.shortLabel.toLowerCase()}.',
+          'Consulta visual con búsqueda, filtros, estados, acciones y paginación para ${config.shortLabel.toLowerCase()}.',
       child: Column(
         children: [
           _ReportToolbar(
@@ -115,7 +115,7 @@ class ReportTableCard extends StatelessWidget {
                           if (config.showStatusColumn)
                             _headerCell(context, 'Estado', 150),
                           _headerCell(context, config.activityColumnLabel, 140),
-                          _headerCell(context, 'Accion', 160),
+                          _headerCell(context, 'Acción', 160),
                         ],
                       ),
                     ),
@@ -374,7 +374,7 @@ class _EmptyTableState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'No hay registros para ese filtro o busqueda.',
+              'No hay registros para ese filtro o búsqueda.',
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ],

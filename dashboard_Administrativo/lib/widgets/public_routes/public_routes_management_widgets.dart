@@ -209,7 +209,7 @@ class PublicRouteCard extends StatelessWidget {
                 value: formatDuration(route.estimatedDurationSeconds),
               ),
               PublicRouteMiniInfo(
-                label: 'Elevacion',
+                label: 'Elevación',
                 value: formatElevation(route.elevationGainMeters),
               ),
             ],
@@ -370,7 +370,7 @@ class PublicRoutesEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Ajusta la busqueda o cambia el filtro de actividad para volver a mostrar resultados.',
+            'Ajusta la búsqueda o cambia el filtro de actividad para volver a mostrar resultados.',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge,
           ),

@@ -55,7 +55,7 @@ class ClientDetailsDialog extends StatelessWidget {
               const SizedBox(height: 12),
               _InfoTile(label: 'Correo', value: _orFallback(client.email)),
               const SizedBox(height: 12),
-              _InfoTile(label: 'Direccion', value: _orFallback(client.address)),
+              _InfoTile(label: 'Dirección', value: _orFallback(client.address)),
               const SizedBox(height: 12),
               _InfoTile(
                 label: 'Actividad favorita',
@@ -68,7 +68,7 @@ class ClientDetailsDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               _InfoTile(
-                label: 'Kilometros acumulados',
+                label: 'Kilómetros acumulados',
                 value: client.kilometers.toStringAsFixed(1),
               ),
             ],

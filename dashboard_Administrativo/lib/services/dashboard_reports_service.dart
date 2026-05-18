@@ -55,7 +55,7 @@ class DashboardReportsService {
 
   Future<DashboardLiveReportPayload> loadUsersReport() async {
     debugPrint(
-      'DashboardReportsService.loadUsersReport: leyendo coleccion users.',
+      'DashboardReportsService.loadUsersReport: leyendo colección users.',
     );
 
     try {
@@ -122,9 +122,9 @@ class DashboardReportsService {
             accentColor: dashboardAccentOrange,
           ),
           DashboardMetricData(
-            title: 'Ultimos registros',
+            title: 'Últimos registros',
             value: '$recentUsers',
-            changeLabel: 'Ultimos 7 dias',
+            changeLabel: 'Últimos 7 días',
             icon: Icons.schedule_outlined,
             accentColor: dashboardSupportGreen,
           ),
@@ -134,11 +134,11 @@ class DashboardReportsService {
         highlights: [
           DashboardLiveReportHighlight(
             label: 'Region mas activa',
-            value: region ?? 'Sin direccion visible',
+            value: region ?? 'Sin dirección visible',
             color: dashboardSoftGreen,
           ),
           DashboardLiveReportHighlight(
-            label: 'Perfil mas comun',
+            label: 'Perfil mas común',
             value: favoriteActivity ?? 'Sin actividad favorita',
             color: dashboardBrandGreen,
           ),
@@ -158,7 +158,7 @@ class DashboardReportsService {
 
   Future<DashboardLiveReportPayload> loadPublicRoutesReport() async {
     debugPrint(
-      'DashboardReportsService.loadPublicRoutesReport: leyendo coleccion routes.',
+      'DashboardReportsService.loadPublicRoutesReport: leyendo colección routes.',
     );
 
     try {
@@ -301,7 +301,7 @@ class DashboardReportsService {
         detail: favoriteActivity != null
             ? 'La actividad favorita mas visible es $favoriteActivity.'
             : 'Aun no hay actividad favorita consistente en users.',
-        timeLabel: 'Coleccion users',
+        timeLabel: 'Colección users',
         icon: Icons.query_stats_outlined,
         accentColor: dashboardBrandGreen,
       ),
@@ -494,7 +494,7 @@ class DashboardReportsService {
     if (difference.inHours < 24) {
       return 'Hace ${difference.inHours} h';
     }
-    return 'Hace ${difference.inDays} dias';
+    return 'Hace ${difference.inDays} días';
   }
 
   String _formatDistance(num meters) {

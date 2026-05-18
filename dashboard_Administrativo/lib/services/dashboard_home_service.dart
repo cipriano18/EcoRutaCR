@@ -121,7 +121,7 @@ class DashboardHomeService {
           value: '$totalClients',
           subtitle: latestUserName != null
               ? 'Ultimo registro detectado: $latestUserName.'
-              : 'Conteo real de la coleccion users.',
+              : 'Conteo real de la colección users.',
           accentColor: dashboardSoftGreen,
         ),
         DashboardOperationalCardData(
@@ -129,7 +129,7 @@ class DashboardHomeService {
           value: '$totalPublicRoutes',
           subtitle: latestRouteName != null
               ? 'Ultima ruta publica observada: $latestRouteName.'
-              : 'Conteo real de rutas públicas en la coleccion routes.',
+              : 'Conteo real de rutas públicas en la colección routes.',
           accentColor: dashboardAccentOrange,
         ),
       ];

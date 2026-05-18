@@ -36,7 +36,7 @@ class AdminListModule extends StatelessWidget {
           return const _AdminMessageCard(
             icon: Icons.group_off_outlined,
             title: 'No hay administradores registrados',
-            message: 'Cuando agregues administradores apareceran aqui.',
+            message: 'Cuando agregues administradores aparecerán aquí.',
           );
         }
 
