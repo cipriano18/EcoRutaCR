@@ -17,6 +17,9 @@ class UserModel {
 
   /// Actividad favorita elegida durante el registro.
   final String? favoriteActivity;
+  final num? weightKg;
+  final int? heightCm;
+  final DateTime? birthDate;
   final int? _completedRoutes;
   final num? _kmCounter;
   final DateTime? _streakStartedAt;
@@ -29,6 +32,9 @@ class UserModel {
     required this.address,
     required this.avatarId,
     this.favoriteActivity,
+    this.weightKg,
+    this.heightCm,
+    this.birthDate,
     int? completedRoutes,
     num? kmCounter,
     DateTime? streakStartedAt,
@@ -69,6 +75,7 @@ class UserModel {
     final rawKmCounter = data['km_counter'];
     final rawStreakStartedAt = data['streak_started_at'];
     final rawStreakDeadlineAt = data['streak_deadline_at'];
+    final rawHeightCm = data['height_cm'];
 
     return UserModel(
       uid: (data['uid'] ?? '').toString(),
@@ -77,6 +84,9 @@ class UserModel {
       address: (data['address'] ?? '').toString(),
       avatarId: rawAvatarId is num ? rawAvatarId.toInt() : 0,
       favoriteActivity: data['favoriteActivity']?.toString(),
+      weightKg: data['weight_kg'] is num ? data['weight_kg'] as num : null,
+      heightCm: rawHeightCm is num ? rawHeightCm.toInt() : null,
+      birthDate: _parseDate(data['birth_date']),
       completedRoutes: rawCompletedRoutes is num
           ? rawCompletedRoutes.toInt()
           : 0,
@@ -94,6 +104,9 @@ class UserModel {
     String? address,
     int? avatarId,
     String? favoriteActivity,
+    num? weightKg,
+    int? heightCm,
+    DateTime? birthDate,
     int? completedRoutes,
     num? kmCounter,
     DateTime? streakStartedAt,
@@ -106,6 +119,9 @@ class UserModel {
       address: address ?? this.address,
       avatarId: avatarId ?? this.avatarId,
       favoriteActivity: favoriteActivity ?? this.favoriteActivity,
+      weightKg: weightKg ?? this.weightKg,
+      heightCm: heightCm ?? this.heightCm,
+      birthDate: birthDate ?? this.birthDate,
       completedRoutes: completedRoutes ?? _completedRoutes,
       kmCounter: kmCounter ?? _kmCounter,
       streakStartedAt: streakStartedAt ?? _streakStartedAt,

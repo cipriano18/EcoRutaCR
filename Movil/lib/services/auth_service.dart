@@ -65,6 +65,9 @@ class AuthService {
     required String password,
     required int avatarId,
     required String favoriteActivity,
+    required double weightKg,
+    required int heightCm,
+    required String birthDate,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
@@ -87,6 +90,9 @@ class AuthService {
       'address': address.trim(),
       'avatarId': avatarId,
       'favoriteActivity': favoriteActivity.trim(),
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
+      'birth_date': birthDate.trim(),
       'completed_routes': 0,
       'km_counter': 0,
       'streak_started_at': null,
