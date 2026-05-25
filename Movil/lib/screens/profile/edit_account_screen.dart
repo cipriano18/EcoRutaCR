@@ -19,11 +19,14 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
 
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _heightController = TextEditingController();
 
   bool _isSaving = false;
   String _selectedActivity = 'Senderismo';
   String? _selectedProvince;
   CantonDistrictOption? _selectedCantonDistrict;
+  DateTime? _selectedBirthDate;
 
   ProvinceLocationData? get _selectedProvinceData {
     final province = _selectedProvince;
@@ -41,9 +44,12 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     final user = Provider.of<UserProvider>(context, listen: false).user;
     _fullNameController.text = user?.fullName ?? '';
     _emailController.text = user?.email ?? '';
+    _weightController.text = user?.weightKg?.toStringAsFixed(1) ?? '';
+    _heightController.text = user?.heightCm?.toStringAsFixed(0) ?? '';
     _selectedActivity = _favoriteActivities.contains(user?.favoriteActivity)
         ? user!.favoriteActivity!
         : 'Senderismo';
+    _selectedBirthDate = user?.birthDate;
     _hydrateAddressSelection(user?.address ?? '');
   }
 
@@ -51,6 +57,8 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
+    _weightController.dispose();
+    _heightController.dispose();
     super.dispose();
   }
 
@@ -98,10 +106,29 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     final fullName = _fullNameController.text.trim();
     final province = _selectedProvince;
     final cantonDistrict = _selectedCantonDistrict;
+    final weightText = _weightController.text.trim();
+    final heightText = _heightController.text.trim();
 
     if (fullName.isEmpty || province == null || cantonDistrict == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Completa todos los campos requeridos')),
+      );
+      return;
+    }
+
+    final weightKg = weightText.isEmpty ? null : double.tryParse(weightText);
+    final heightCm = heightText.isEmpty ? null : double.tryParse(heightText);
+
+    if (weightText.isNotEmpty && (weightKg == null || weightKg <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa un peso valido en kg')),
+      );
+      return;
+    }
+
+    if (heightText.isNotEmpty && (heightCm == null || heightCm <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa una altura valida en cm')),
       );
       return;
     }
@@ -115,15 +142,24 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         fullName: fullName,
         address: cantonDistrict.toStoredAddress(province),
         favoriteActivity: _selectedActivity,
+        weightKg: weightKg,
+        heightCm: heightCm,
+        birthDate: _selectedBirthDate,
       );
 
-      provider.setUser(
-        user.copyWith(
-          fullName: fullName,
-          address: cantonDistrict.toStoredAddress(province),
-          favoriteActivity: _selectedActivity,
-        ),
-      );
+      final refreshedUser = await AuthService().getCurrentUserProfile();
+      if (refreshedUser != null) {
+        provider.setUser(refreshedUser);
+      } else {
+        provider.setUser(
+          user.copyWith(
+            fullName: fullName,
+            address: cantonDistrict.toStoredAddress(province),
+            favoriteActivity: _selectedActivity,
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -239,6 +275,29 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
                       },
               ),
               const SizedBox(height: 16),
+              _buildLabel('Peso (kg)'),
+              _buildStyledField(
+                controller: _weightController,
+                hintText: 'Ej: 72.5',
+                icon: Icons.monitor_weight_outlined,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildLabel('Altura (cm)'),
+              _buildStyledField(
+                controller: _heightController,
+                hintText: 'Ej: 175',
+                icon: Icons.height_rounded,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildLabel('Fecha de nacimiento'),
+              _buildBirthDateField(),
+              const SizedBox(height: 16),
               _buildLabel('Actividad favorita'),
               const SizedBox(height: 10),
               Wrap(
@@ -332,9 +391,11 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     required TextEditingController controller,
     required String hintText,
     required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return TextField(
       controller: controller,
+      keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hintText,
         prefixIcon: Icon(icon),
@@ -343,6 +404,37 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBirthDateField() {
+    final label = _selectedBirthDate == null
+        ? 'Selecciona una fecha'
+        : _formatDate(_selectedBirthDate!);
+
+    return InkWell(
+      onTap: _pickBirthDate,
+      borderRadius: BorderRadius.circular(18),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          prefixIcon: const Icon(Icons.cake_outlined),
+          filled: true,
+          fillColor: _surface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: _selectedBirthDate == null ? Colors.black54 : Colors.black87,
+            fontWeight: _selectedBirthDate == null
+                ? FontWeight.w500
+                : FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -388,5 +480,25 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedBirthDate ?? DateTime(now.year - 20, 1, 1),
+      firstDate: DateTime(1900, 1, 1),
+      lastDate: now,
+    );
+    if (picked == null) return;
+    setState(() {
+      _selectedBirthDate = picked;
+    });
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }

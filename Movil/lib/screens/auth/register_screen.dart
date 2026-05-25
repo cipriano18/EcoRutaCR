@@ -30,9 +30,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController weightKgController = TextEditingController();
-  final TextEditingController heightCmController = TextEditingController();
-  final TextEditingController birthDateController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   ProvinceLocationData? get _selectedProvinceData {
@@ -49,39 +46,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> registerUser() async {
     final fullName = fullNameController.text.trim();
     final email = emailController.text.trim();
-    final weightKgText = weightKgController.text.trim().replaceAll(',', '.');
-    final heightCmText = heightCmController.text.trim();
-    final birthDate = birthDateController.text.trim();
     final password = passwordController.text.trim();
     final province = selectedProvince;
     final cantonDistrict = selectedCantonDistrict;
-    final weightKg = double.tryParse(weightKgText);
-    final heightCm = int.tryParse(heightCmText);
 
     if (fullName.isEmpty ||
         email.isEmpty ||
-        weightKgText.isEmpty ||
-        heightCmText.isEmpty ||
-        birthDate.isEmpty ||
         province == null ||
         cantonDistrict == null ||
         password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Complete todos los campos')),
-      );
-      return;
-    }
-
-    if (weightKg == null || weightKg <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa un peso valido en kilogramos')),
-      );
-      return;
-    }
-
-    if (heightCm == null || heightCm <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa una altura valida en centimetros')),
       );
       return;
     }
@@ -107,9 +82,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
         avatarId: selectedAvatar,
         favoriteActivity: selectedFavoriteActivity,
-        weightKg: weightKg,
-        heightCm: heightCm,
-        birthDate: birthDate,
       );
       await _authService.saveRememberedLogin(rememberMe: true, email: email);
 
@@ -162,9 +134,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     fullNameController.dispose();
     emailController.dispose();
-    weightKgController.dispose();
-    heightCmController.dispose();
-    birthDateController.dispose();
     passwordController.dispose();
     super.dispose();
   }
@@ -224,33 +193,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 hint: 'ejemplo@ecoruta.com',
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-              ),
-              const SizedBox(height: 16),
-              _buildLabel('Peso (kg)'),
-              _buildStyledField(
-                controller: weightKgController,
-                hint: 'Ej. 68.5',
-                icon: Icons.monitor_weight_outlined,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildLabel('Altura (cm)'),
-              _buildStyledField(
-                controller: heightCmController,
-                hint: 'Ej. 172',
-                icon: Icons.height_outlined,
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              _buildLabel('Fecha de nacimiento'),
-              _buildStyledField(
-                controller: birthDateController,
-                hint: 'AAAA-MM-DD',
-                icon: Icons.cake_outlined,
-                readOnly: true,
-                onTap: _selectBirthDate,
               ),
               const SizedBox(height: 16),
               _buildLabel('Provincia'),
@@ -450,14 +392,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     required String hint,
     required IconData icon,
     TextInputType keyboardType = TextInputType.text,
-    bool readOnly = false,
-    VoidCallback? onTap,
   }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      readOnly: readOnly,
-      onTap: onTap,
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon),
@@ -469,32 +407,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _selectBirthDate() async {
-    final now = DateTime.now();
-    final initialDate =
-        _tryParseBirthDate(birthDateController.text) ??
-        DateTime(now.year - 18, now.month, now.day);
-
-    final selectedDate = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900),
-      lastDate: now,
-    );
-
-    if (selectedDate == null) return;
-
-    birthDateController.text =
-        '${selectedDate.year.toString().padLeft(4, '0')}-'
-        '${selectedDate.month.toString().padLeft(2, '0')}-'
-        '${selectedDate.day.toString().padLeft(2, '0')}';
-  }
-
-  DateTime? _tryParseBirthDate(String value) {
-    if (value.trim().isEmpty) return null;
-    return DateTime.tryParse(value.trim());
   }
 
   Widget _buildDropdownField<T>({

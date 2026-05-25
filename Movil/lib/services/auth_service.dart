@@ -65,9 +65,6 @@ class AuthService {
     required String password,
     required int avatarId,
     required String favoriteActivity,
-    required double weightKg,
-    required int heightCm,
-    required String birthDate,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
@@ -90,14 +87,28 @@ class AuthService {
       'address': address.trim(),
       'avatarId': avatarId,
       'favoriteActivity': favoriteActivity.trim(),
-      'weight_kg': weightKg,
-      'height_cm': heightCm,
-      'birth_date': birthDate.trim(),
       'completed_routes': 0,
       'km_counter': 0,
       'streak_started_at': null,
       'streak_deadline_at': null,
+      'weight_kg': null,
+      'height_cm': null,
+      'birth_date': null,
+      'routes_per_week_avg': null,
+      'km_per_week_avg': null,
+      'minutes_per_week_avg': null,
+      'last_route_at': null,
+      'activity_consistency_score': null,
+      'favorite_route_distance_km': null,
+      'favorite_route_duration_min': null,
+      'bmi': null,
+      'bmi_category': null,
+      'activity_level': null,
+      'wellness_status': null,
+      'wellness_score': null,
+      'inference_updated_at': null,
       'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
 
     return userCredential;
@@ -140,6 +151,7 @@ class AuthService {
 
     await _firestore.collection('users').doc(user.uid).update({
       'avatarId': avatarId,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -148,6 +160,9 @@ class AuthService {
     required String fullName,
     required String address,
     required String favoriteActivity,
+    double? weightKg,
+    double? heightCm,
+    DateTime? birthDate,
   }) async {
     final user = _auth.currentUser;
 
@@ -162,6 +177,10 @@ class AuthService {
       'fullName': fullName.trim(),
       'address': address.trim(),
       'favoriteActivity': favoriteActivity.trim(),
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
+      'birth_date': birthDate,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -255,6 +274,7 @@ class AuthService {
     await userDoc.set({
       'streak_started_at': hasActiveStreak ? startedAt ?? now : now,
       'streak_deadline_at': nextDeadline,
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     final refreshed = await userDoc.get();
@@ -274,6 +294,7 @@ class AuthService {
     await _firestore.collection('users').doc(uid).set({
       'streak_started_at': null,
       'streak_deadline_at': null,
+      'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
     final normalized = Map<String, dynamic>.from(data);
