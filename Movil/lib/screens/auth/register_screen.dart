@@ -51,18 +51,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = emailController.text.trim();
     final weightKgText = weightKgController.text.trim().replaceAll(',', '.');
     final heightCmText = heightCmController.text.trim();
-    final birthDate = birthDateController.text.trim();
+    final birthDateText = birthDateController.text.trim();
     final password = passwordController.text.trim();
     final province = selectedProvince;
     final cantonDistrict = selectedCantonDistrict;
     final weightKg = double.tryParse(weightKgText);
     final heightCm = int.tryParse(heightCmText);
+    final birthDate = _tryParseBirthDate(birthDateText);
 
     if (fullName.isEmpty ||
         email.isEmpty ||
         weightKgText.isEmpty ||
         heightCmText.isEmpty ||
-        birthDate.isEmpty ||
+        birthDateText.isEmpty ||
         province == null ||
         cantonDistrict == null ||
         password.isEmpty) {
@@ -83,6 +84,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Ingresa una altura valida en centimetros'),
+        ),
+      );
+      return;
+    }
+
+    if (birthDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecciona una fecha de nacimiento valida'),
         ),
       );
       return;

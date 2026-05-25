@@ -29,10 +29,7 @@ class UserModel {
   final double? _routesPerWeekAvg;
   final double? _kmPerWeekAvg;
   final double? _minutesPerWeekAvg;
-  final DateTime? _lastRouteAt;
   final double? _activityConsistencyScore;
-  final double? _favoriteRouteDistanceKm;
-  final double? _favoriteRouteDurationMin;
   final double? _bmi;
   final String? _bmiCategory;
   final String? _activityLevel;
@@ -59,10 +56,7 @@ class UserModel {
     double? routesPerWeekAvg,
     double? kmPerWeekAvg,
     double? minutesPerWeekAvg,
-    DateTime? lastRouteAt,
     double? activityConsistencyScore,
-    double? favoriteRouteDistanceKm,
-    double? favoriteRouteDurationMin,
     double? bmi,
     String? bmiCategory,
     String? activityLevel,
@@ -81,10 +75,7 @@ class UserModel {
        _routesPerWeekAvg = routesPerWeekAvg,
        _kmPerWeekAvg = kmPerWeekAvg,
        _minutesPerWeekAvg = minutesPerWeekAvg,
-       _lastRouteAt = lastRouteAt,
        _activityConsistencyScore = activityConsistencyScore,
-       _favoriteRouteDistanceKm = favoriteRouteDistanceKm,
-       _favoriteRouteDurationMin = favoriteRouteDurationMin,
        _bmi = bmi,
        _bmiCategory = bmiCategory,
        _activityLevel = activityLevel,
@@ -112,10 +103,7 @@ class UserModel {
   double? get routesPerWeekAvg => _routesPerWeekAvg;
   double? get kmPerWeekAvg => _kmPerWeekAvg;
   double? get minutesPerWeekAvg => _minutesPerWeekAvg;
-  DateTime? get lastRouteAt => _lastRouteAt;
   double? get activityConsistencyScore => _activityConsistencyScore;
-  double? get favoriteRouteDistanceKm => _favoriteRouteDistanceKm;
-  double? get favoriteRouteDurationMin => _favoriteRouteDurationMin;
   double? get bmi => _bmi;
   String? get bmiCategory => _bmiCategory;
   String? get activityLevel => _activityLevel;
@@ -136,10 +124,7 @@ class UserModel {
     routesPerWeekAvg: _routesPerWeekAvg,
     kmPerWeekAvg: _kmPerWeekAvg,
     minutesPerWeekAvg: _minutesPerWeekAvg,
-    lastRouteAt: _lastRouteAt,
     activityConsistencyScore: _activityConsistencyScore,
-    favoriteRouteDistanceKm: _favoriteRouteDistanceKm,
-    favoriteRouteDurationMin: _favoriteRouteDurationMin,
   );
 
   /// Resultado de inferencia usando datos existentes o derivando localmente.
@@ -193,10 +178,7 @@ class UserModel {
       routesPerWeekAvg: _toDouble(data['routes_per_week_avg']),
       kmPerWeekAvg: _toDouble(data['km_per_week_avg']),
       minutesPerWeekAvg: _toDouble(data['minutes_per_week_avg']),
-      lastRouteAt: _parseDate(data['last_route_at']),
       activityConsistencyScore: _toDouble(data['activity_consistency_score']),
-      favoriteRouteDistanceKm: _toDouble(data['favorite_route_distance_km']),
-      favoriteRouteDurationMin: _toDouble(data['favorite_route_duration_min']),
       bmi: _toDouble(data['bmi']),
       bmiCategory: data['bmi_category']?.toString(),
       activityLevel: data['activity_level']?.toString(),
@@ -226,10 +208,7 @@ class UserModel {
     double? routesPerWeekAvg,
     double? kmPerWeekAvg,
     double? minutesPerWeekAvg,
-    DateTime? lastRouteAt,
     double? activityConsistencyScore,
-    double? favoriteRouteDistanceKm,
-    double? favoriteRouteDurationMin,
     double? bmi,
     String? bmiCategory,
     String? activityLevel,
@@ -256,13 +235,8 @@ class UserModel {
       routesPerWeekAvg: routesPerWeekAvg ?? _routesPerWeekAvg,
       kmPerWeekAvg: kmPerWeekAvg ?? _kmPerWeekAvg,
       minutesPerWeekAvg: minutesPerWeekAvg ?? _minutesPerWeekAvg,
-      lastRouteAt: lastRouteAt ?? _lastRouteAt,
       activityConsistencyScore:
           activityConsistencyScore ?? _activityConsistencyScore,
-      favoriteRouteDistanceKm:
-          favoriteRouteDistanceKm ?? _favoriteRouteDistanceKm,
-      favoriteRouteDurationMin:
-          favoriteRouteDurationMin ?? _favoriteRouteDurationMin,
       bmi: bmi ?? _bmi,
       bmiCategory: bmiCategory ?? _bmiCategory,
       activityLevel: activityLevel ?? _activityLevel,

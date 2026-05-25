@@ -10,10 +10,7 @@ class UserHealthInput {
     this.routesPerWeekAvg,
     this.kmPerWeekAvg,
     this.minutesPerWeekAvg,
-    this.lastRouteAt,
     this.activityConsistencyScore,
-    this.favoriteRouteDistanceKm,
-    this.favoriteRouteDurationMin,
   });
 
   final double? weightKg;
@@ -25,10 +22,7 @@ class UserHealthInput {
   final double? routesPerWeekAvg;
   final double? kmPerWeekAvg;
   final double? minutesPerWeekAvg;
-  final DateTime? lastRouteAt;
   final double? activityConsistencyScore;
-  final double? favoriteRouteDistanceKm;
-  final double? favoriteRouteDurationMin;
 
   factory UserHealthInput.fromUserMap(Map<String, dynamic> data) {
     return UserHealthInput(
@@ -41,10 +35,7 @@ class UserHealthInput {
       routesPerWeekAvg: _toDouble(data['routes_per_week_avg']),
       kmPerWeekAvg: _toDouble(data['km_per_week_avg']),
       minutesPerWeekAvg: _toDouble(data['minutes_per_week_avg']),
-      lastRouteAt: _parseDate(data['last_route_at']),
       activityConsistencyScore: _toDouble(data['activity_consistency_score']),
-      favoriteRouteDistanceKm: _toDouble(data['favorite_route_distance_km']),
-      favoriteRouteDurationMin: _toDouble(data['favorite_route_duration_min']),
     );
   }
 
@@ -111,6 +102,14 @@ class HealthInferenceResult {
       'activity_level': activityLevel,
       'wellness_status': wellnessStatus,
       'wellness_score': wellnessScore,
+      'inference_updated_at': inferredAt ?? DateTime.now(),
+    };
+  }
+
+  Map<String, dynamic> toInitialFirestorePatch({DateTime? inferredAt}) {
+    return {
+      'bmi': bmi,
+      'bmi_category': bmiCategory,
       'inference_updated_at': inferredAt ?? DateTime.now(),
     };
   }
