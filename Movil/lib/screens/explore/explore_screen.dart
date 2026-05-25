@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'tabs/generate_tab.dart';
+import 'tabs/recommendations_tab.dart';
 import 'tabs/search_tab.dart';
 
-/// Pantalla contenedora de búsqueda y generación de rutas.
+/// Pantalla contenedora de busqueda, generacion y recomendaciones.
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -25,7 +26,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _exploreProvider = ExploreProvider();
   }
 
@@ -80,8 +81,9 @@ class _ExploreScreenState extends State<ExploreScreen>
                     fontWeight: FontWeight.w600,
                   ),
                   tabs: const [
-                    Tab(text: 'Búsqueda'),
+                    Tab(text: 'Busqueda'),
                     Tab(text: 'Generar ruta'),
+                    Tab(text: 'Recomendadas'),
                   ],
                 ),
               ),
@@ -90,7 +92,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         ),
         body: TabBarView(
           controller: _tabController,
-          children: const [SearchTab(), GenerateTab()],
+          children: const [SearchTab(), GenerateTab(), RecommendationsTab()],
         ),
       ),
     );

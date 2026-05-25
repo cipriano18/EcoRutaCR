@@ -71,6 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final completedRoutes = user?.completedRoutes ?? 0;
     final totalKilometers = user?.kmCounter ?? 0;
     final streakWeeks = user?.streakWeeks ?? 0;
+    final healthInference = user?.healthInference;
     final currentRank = getUserRank(totalKilometers);
     final currentRankPalette = getUserRankPalette(totalKilometers);
     final avatarId = user?.avatarId ?? 0;
@@ -103,6 +104,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               completedRoutes: completedRoutes,
               totalKilometers: totalKilometers,
             ),
+            const SizedBox(height: 16),
+            _healthInsightsCard(healthInference: healthInference),
             const SizedBox(height: 16),
             StreakStatusCard(streakWeeks: streakWeeks),
             const SizedBox(height: 34),
@@ -405,6 +408,131 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _healthInsightsCard({required dynamic healthInference}) {
+    final bmi = healthInference?.bmi;
+    final activityLevel = healthInference?.activityLevel;
+    final wellnessStatus = healthInference?.wellnessStatus;
+    final wellnessScore = healthInference?.wellnessScore;
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'INSIGHTS DE SALUD',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.5,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Indicadores orientativos',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              color: primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Estos datos sirven como referencia general y no sustituyen evaluacion medica.',
+            style: TextStyle(fontSize: 13, height: 1.4, color: Colors.black54),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: _smallStatCard(
+                  icon: Icons.monitor_weight_outlined,
+                  value: bmi == null ? '--' : bmi.toStringAsFixed(1),
+                  label: 'IMC',
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _smallStatCard(
+                  icon: Icons.fitness_center_rounded,
+                  value: _labelForActivityLevel(activityLevel),
+                  label: 'Actividad',
+                  smallerValue: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: surfaceLow,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _labelForWellnessStatus(wellnessStatus),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    color: primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  wellnessScore == null
+                      ? 'Completa tu peso, altura y constancia de rutas para generar una lectura mas completa.'
+                      : 'Puntaje de bienestar: ${wellnessScore.toStringAsFixed(0)}/100',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _labelForActivityLevel(String? value) {
+    switch (value) {
+      case 'high':
+        return 'Alta';
+      case 'good':
+        return 'Buena';
+      case 'moderate':
+        return 'Media';
+      case 'low':
+        return 'Baja';
+      default:
+        return 'Pendiente';
+    }
+  }
+
+  String _labelForWellnessStatus(String? value) {
+    switch (value) {
+      case 'saludable':
+        return 'Estado saludable';
+      case 'mejorable':
+        return 'Area de mejora';
+      case 'atencion':
+        return 'Atencion sugerida';
+      default:
+        return 'Datos insuficientes';
+    }
   }
 
   String _formatKmCounter(num value) {

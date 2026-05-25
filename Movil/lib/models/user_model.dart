@@ -1,3 +1,5 @@
+import 'package:ecoruta/services/health_inference.dart';
+
 /// Representa el perfil persistido del usuario dentro de Firestore.
 class UserModel {
   /// Identificador del usuario autenticado.
@@ -9,10 +11,10 @@ class UserModel {
   /// Nombre completo mostrado en la app.
   final String fullName;
 
-  /// Dirección o ubicación de referencia del usuario.
+  /// Direccion o ubicacion de referencia del usuario.
   final String address;
 
-  /// Avatar seleccionado dentro del catálogo local.
+  /// Avatar seleccionado dentro del catalogo local.
   final int avatarId;
 
   /// Actividad favorita elegida durante el registro.
@@ -21,6 +23,24 @@ class UserModel {
   final num? _kmCounter;
   final DateTime? _streakStartedAt;
   final DateTime? _streakDeadlineAt;
+  final double? _weightKg;
+  final double? _heightCm;
+  final DateTime? _birthDate;
+  final double? _routesPerWeekAvg;
+  final double? _kmPerWeekAvg;
+  final double? _minutesPerWeekAvg;
+  final DateTime? _lastRouteAt;
+  final double? _activityConsistencyScore;
+  final double? _favoriteRouteDistanceKm;
+  final double? _favoriteRouteDurationMin;
+  final double? _bmi;
+  final String? _bmiCategory;
+  final String? _activityLevel;
+  final String? _wellnessStatus;
+  final double? _wellnessScore;
+  final DateTime? _inferenceUpdatedAt;
+  final DateTime? _createdAt;
+  final DateTime? _updatedAt;
 
   UserModel({
     required this.uid,
@@ -33,22 +53,106 @@ class UserModel {
     num? kmCounter,
     DateTime? streakStartedAt,
     DateTime? streakDeadlineAt,
+    double? weightKg,
+    double? heightCm,
+    DateTime? birthDate,
+    double? routesPerWeekAvg,
+    double? kmPerWeekAvg,
+    double? minutesPerWeekAvg,
+    DateTime? lastRouteAt,
+    double? activityConsistencyScore,
+    double? favoriteRouteDistanceKm,
+    double? favoriteRouteDurationMin,
+    double? bmi,
+    String? bmiCategory,
+    String? activityLevel,
+    String? wellnessStatus,
+    double? wellnessScore,
+    DateTime? inferenceUpdatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) : _completedRoutes = completedRoutes,
        _kmCounter = kmCounter,
        _streakStartedAt = streakStartedAt,
-       _streakDeadlineAt = streakDeadlineAt;
+       _streakDeadlineAt = streakDeadlineAt,
+       _weightKg = weightKg,
+       _heightCm = heightCm,
+       _birthDate = birthDate,
+       _routesPerWeekAvg = routesPerWeekAvg,
+       _kmPerWeekAvg = kmPerWeekAvg,
+       _minutesPerWeekAvg = minutesPerWeekAvg,
+       _lastRouteAt = lastRouteAt,
+       _activityConsistencyScore = activityConsistencyScore,
+       _favoriteRouteDistanceKm = favoriteRouteDistanceKm,
+       _favoriteRouteDurationMin = favoriteRouteDurationMin,
+       _bmi = bmi,
+       _bmiCategory = bmiCategory,
+       _activityLevel = activityLevel,
+       _wellnessStatus = wellnessStatus,
+       _wellnessScore = wellnessScore,
+       _inferenceUpdatedAt = inferenceUpdatedAt,
+       _createdAt = createdAt,
+       _updatedAt = updatedAt;
 
   /// Cantidad de rutas completadas con valor por defecto seguro.
   int get completedRoutes => _completedRoutes ?? 0;
 
-  /// Kilómetros acumulados usados para rangos y progreso.
+  /// Kilometros acumulados usados para rangos y progreso.
   num get kmCounter => _kmCounter ?? 0;
 
   /// Fecha de inicio de la racha semanal activa.
   DateTime? get streakStartedAt => _streakStartedAt;
 
-  /// Fecha límite para conservar la racha actual.
+  /// Fecha limite para conservar la racha actual.
   DateTime? get streakDeadlineAt => _streakDeadlineAt;
+
+  double? get weightKg => _weightKg;
+  double? get heightCm => _heightCm;
+  DateTime? get birthDate => _birthDate;
+  double? get routesPerWeekAvg => _routesPerWeekAvg;
+  double? get kmPerWeekAvg => _kmPerWeekAvg;
+  double? get minutesPerWeekAvg => _minutesPerWeekAvg;
+  DateTime? get lastRouteAt => _lastRouteAt;
+  double? get activityConsistencyScore => _activityConsistencyScore;
+  double? get favoriteRouteDistanceKm => _favoriteRouteDistanceKm;
+  double? get favoriteRouteDurationMin => _favoriteRouteDurationMin;
+  double? get bmi => _bmi;
+  String? get bmiCategory => _bmiCategory;
+  String? get activityLevel => _activityLevel;
+  String? get wellnessStatus => _wellnessStatus;
+  double? get wellnessScore => _wellnessScore;
+  DateTime? get inferenceUpdatedAt => _inferenceUpdatedAt;
+  DateTime? get createdAt => _createdAt;
+  DateTime? get updatedAt => _updatedAt;
+
+  /// Datos normalizados para correr el motor de inferencias localmente.
+  UserHealthInput get healthInput => UserHealthInput(
+    weightKg: _weightKg,
+    heightCm: _heightCm,
+    birthDate: _birthDate,
+    favoriteActivity: favoriteActivity,
+    completedRoutes: completedRoutes,
+    kmCounter: kmCounter.toDouble(),
+    routesPerWeekAvg: _routesPerWeekAvg,
+    kmPerWeekAvg: _kmPerWeekAvg,
+    minutesPerWeekAvg: _minutesPerWeekAvg,
+    lastRouteAt: _lastRouteAt,
+    activityConsistencyScore: _activityConsistencyScore,
+    favoriteRouteDistanceKm: _favoriteRouteDistanceKm,
+    favoriteRouteDurationMin: _favoriteRouteDurationMin,
+  );
+
+  /// Resultado de inferencia usando datos existentes o derivando localmente.
+  HealthInferenceResult get healthInference {
+    final inferred = HealthInferenceEngine.evaluate(healthInput);
+    return inferred.copyWith(
+      bmi: _bmi ?? inferred.bmi,
+      bmiCategory: _bmiCategory ?? inferred.bmiCategory,
+      activityLevel: _activityLevel ?? inferred.activityLevel,
+      wellnessStatus: _wellnessStatus ?? inferred.wellnessStatus,
+      wellnessScore: _wellnessScore ?? inferred.wellnessScore,
+    );
+  }
 
   /// Calcula la cantidad de semanas activas de la racha vigente.
   int get streakWeeks {
@@ -83,6 +187,24 @@ class UserModel {
       kmCounter: rawKmCounter is num ? rawKmCounter : 0,
       streakStartedAt: _parseDate(rawStreakStartedAt),
       streakDeadlineAt: _parseDate(rawStreakDeadlineAt),
+      weightKg: _toDouble(data['weight_kg']),
+      heightCm: _toDouble(data['height_cm']),
+      birthDate: _parseDate(data['birth_date']),
+      routesPerWeekAvg: _toDouble(data['routes_per_week_avg']),
+      kmPerWeekAvg: _toDouble(data['km_per_week_avg']),
+      minutesPerWeekAvg: _toDouble(data['minutes_per_week_avg']),
+      lastRouteAt: _parseDate(data['last_route_at']),
+      activityConsistencyScore: _toDouble(data['activity_consistency_score']),
+      favoriteRouteDistanceKm: _toDouble(data['favorite_route_distance_km']),
+      favoriteRouteDurationMin: _toDouble(data['favorite_route_duration_min']),
+      bmi: _toDouble(data['bmi']),
+      bmiCategory: data['bmi_category']?.toString(),
+      activityLevel: data['activity_level']?.toString(),
+      wellnessStatus: data['wellness_status']?.toString(),
+      wellnessScore: _toDouble(data['wellness_score']),
+      inferenceUpdatedAt: _parseDate(data['inference_updated_at']),
+      createdAt: _parseDate(data['createdAt']),
+      updatedAt: _parseDate(data['updatedAt']),
     );
   }
 
@@ -98,6 +220,24 @@ class UserModel {
     num? kmCounter,
     DateTime? streakStartedAt,
     DateTime? streakDeadlineAt,
+    double? weightKg,
+    double? heightCm,
+    DateTime? birthDate,
+    double? routesPerWeekAvg,
+    double? kmPerWeekAvg,
+    double? minutesPerWeekAvg,
+    DateTime? lastRouteAt,
+    double? activityConsistencyScore,
+    double? favoriteRouteDistanceKm,
+    double? favoriteRouteDurationMin,
+    double? bmi,
+    String? bmiCategory,
+    String? activityLevel,
+    String? wellnessStatus,
+    double? wellnessScore,
+    DateTime? inferenceUpdatedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -110,6 +250,27 @@ class UserModel {
       kmCounter: kmCounter ?? _kmCounter,
       streakStartedAt: streakStartedAt ?? _streakStartedAt,
       streakDeadlineAt: streakDeadlineAt ?? _streakDeadlineAt,
+      weightKg: weightKg ?? _weightKg,
+      heightCm: heightCm ?? _heightCm,
+      birthDate: birthDate ?? _birthDate,
+      routesPerWeekAvg: routesPerWeekAvg ?? _routesPerWeekAvg,
+      kmPerWeekAvg: kmPerWeekAvg ?? _kmPerWeekAvg,
+      minutesPerWeekAvg: minutesPerWeekAvg ?? _minutesPerWeekAvg,
+      lastRouteAt: lastRouteAt ?? _lastRouteAt,
+      activityConsistencyScore:
+          activityConsistencyScore ?? _activityConsistencyScore,
+      favoriteRouteDistanceKm:
+          favoriteRouteDistanceKm ?? _favoriteRouteDistanceKm,
+      favoriteRouteDurationMin:
+          favoriteRouteDurationMin ?? _favoriteRouteDurationMin,
+      bmi: bmi ?? _bmi,
+      bmiCategory: bmiCategory ?? _bmiCategory,
+      activityLevel: activityLevel ?? _activityLevel,
+      wellnessStatus: wellnessStatus ?? _wellnessStatus,
+      wellnessScore: wellnessScore ?? _wellnessScore,
+      inferenceUpdatedAt: inferenceUpdatedAt ?? _inferenceUpdatedAt,
+      createdAt: createdAt ?? _createdAt,
+      updatedAt: updatedAt ?? _updatedAt,
     );
   }
 
@@ -126,6 +287,11 @@ class UserModel {
     if (value is String) {
       return DateTime.tryParse(value);
     }
+    return null;
+  }
+
+  static double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
     return null;
   }
 }
