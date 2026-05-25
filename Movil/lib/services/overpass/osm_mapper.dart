@@ -79,24 +79,27 @@ class OsmMapper {
         }
 
         final dist = _distanceInMeters(fromNode, toNode);
+        final oneway = tags['oneway'];
+        final isForwardOneway = oneway == 'yes' || oneway == '1';
+        final isReverseOneway = oneway == '-1';
 
-        edges.add(
-          GeoEdge(
-            id: '$wayId-${fromNode.id}-${toNode.id}',
-            fromNodeId: fromNode.id,
-            toNodeId: toNode.id,
-            distanceMeters: dist,
-            profile: profile,
-            name: tags['name'],
-            sourceWayId: wayId,
-            tags: tags,
-            geometry: [fromNode, toNode],
-          ),
-        );
+        if (!isReverseOneway) {
+          edges.add(
+            GeoEdge(
+              id: '$wayId-${fromNode.id}-${toNode.id}',
+              fromNodeId: fromNode.id,
+              toNodeId: toNode.id,
+              distanceMeters: dist,
+              profile: profile,
+              name: tags['name'],
+              sourceWayId: wayId,
+              tags: tags,
+              geometry: [fromNode, toNode],
+            ),
+          );
+        }
 
-        // Los caminos de OSM son bidireccionales salvo oneway=yes.
-        final isOneway = tags['oneway'] == 'yes' || tags['oneway'] == '1';
-        if (!isOneway) {
+        if (!isForwardOneway) {
           edges.add(
             GeoEdge(
               id: '$wayId-${toNode.id}-${fromNode.id}',

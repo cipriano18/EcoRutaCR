@@ -28,6 +28,19 @@ enum RouteProfile {
     }
   }
 
+  /// Tipos de `highway=*` para rutas desafiantes (grafo pequeño y especializado).
+  /// Excluye calles urbanas comunes para reducir el grafo a senderos y trochas.
+  List<String> get challengingHighwayValues {
+    switch (this) {
+      case RouteProfile.hiking:
+        return const ['path', 'track', 'steps', 'bridleway'];
+      case RouteProfile.cycling:
+        return const ['cycleway', 'path', 'track'];
+      case RouteProfile.running:
+        return const ['path', 'track', 'footway', 'bridleway'];
+    }
+  }
+
   /// Tipos de `highway=*` permitidos para construir el grafo.
   List<String> get highwayValues {
     switch (this) {

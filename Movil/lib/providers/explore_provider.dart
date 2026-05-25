@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:ecoruta/models/geo_edge.dart';
 import 'package:ecoruta/models/geo_node.dart';
 import 'package:ecoruta/models/route_profile.dart';
-import 'package:ecoruta/services/elevation/elevation_service.dart';
+import 'package:ecoruta/services/elevation/terrain_tile_service.dart';
 import 'package:ecoruta/services/overpass/osm_mapper.dart';
 import 'package:ecoruta/services/overpass/overpass_service.dart';
 import 'package:ecoruta/services/routing/a_star_router.dart';
@@ -74,16 +74,16 @@ class ExploreProvider extends ChangeNotifier {
     OverpassService? overpassService,
     OsmMapper? osmMapper,
     AStarRouter? router,
-    ElevationService? elevationService,
+    TerrainTileService? terrainTileService,
   }) : _overpassService = overpassService ?? OverpassService(),
        _osmMapper = osmMapper ?? const OsmMapper(),
        _router = router ?? const AStarRouter(),
-       _elevationService = elevationService ?? ElevationService();
+       _terrainTileService = terrainTileService ?? TerrainTileService();
 
   final OverpassService _overpassService;
   final OsmMapper _osmMapper;
   final AStarRouter _router;
-  final ElevationService _elevationService;
+  final TerrainTileService _terrainTileService;
 
   RouteProfile _selectedProfile = RouteProfile.hiking;
   bool _isLoading = false;
@@ -118,6 +118,7 @@ class ExploreProvider extends ChangeNotifier {
     required double startLon,
     required double endLat,
     required double endLon,
+    RoutingPreference preference = RoutingPreference.shortest,
   }) async {
     _setLoading(true);
     _errorMessage = null;
@@ -158,6 +159,9 @@ class ExploreProvider extends ChangeNotifier {
         notify: false,
       );
 
+      // Filtrar a la componente conexa principal antes de rutear.
+      _nodes = _router.mainComponentNodes(_nodes, _edges);
+
       final anchorResult = _selectConnectedAnchors(
         startLat: startLat,
         startLon: startLon,
@@ -194,14 +198,82 @@ class ExploreProvider extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final anchorSelection = anchorResult.selection!;
-      final routeWithElevation = await _enrichRouteWithElevation(
-        anchorSelection.previewRoute,
+
+      final rawResults = <RoutingPreference, RouteResult?>{};
+
+      // Ruta más corta: siempre desde el grafo principal, sin elevación.
+      rawResults[RoutingPreference.shortest] = _router.findRoute(
+        nodes: _nodes,
+        edges: _edges,
+        startId: anchorResult.selection!.startNode.id,
+        goalId: anchorResult.selection!.endNode.id,
+        profile: _selectedProfile,
+        preference: RoutingPreference.shortest,
       );
 
-      final rawResults = <RoutingPreference, RouteResult?>{
-        RoutingPreference.shortest: routeWithElevation,
-      };
+      if (preference == RoutingPreference.mostChallenging) {
+        _nodes = await _terrainTileService.enrichWithElevation(
+          _nodes,
+          south: south,
+          west: west,
+          north: north,
+          east: east,
+        );
+
+        final withElev = _nodes.where((n) => n.elevation != null).length;
+        debugPrint(
+          '[Desafiante] Elevación: $withElev/${_nodes.length} nodos con datos '
+          '(${(_nodes.isEmpty ? 0 : withElev * 100 ~/ _nodes.length)}%)',
+        );
+
+        final startId = anchorResult.selection!.startNode.id;
+        final endId   = anchorResult.selection!.endNode.id;
+
+        final peakCandidates = _nodes
+            .where((n) => n.elevation != null && n.id != startId && n.id != endId)
+            .toList()
+          ..sort((a, b) => b.elevation!.compareTo(a.elevation!));
+
+        RouteResult? bestChallenging;
+        double bestGain = -1;
+
+        for (final peak in peakCandidates.take(10)) {
+          final legA = _router.findRoute(
+            nodes: _nodes,
+            edges: _edges,
+            startId: startId,
+            goalId: peak.id,
+            profile: _selectedProfile,
+            preference: RoutingPreference.shortest,
+          );
+          if (legA == null || legA.isEmpty) continue;
+
+          final legB = _router.findRoute(
+            nodes: _nodes,
+            edges: _edges,
+            startId: peak.id,
+            goalId: endId,
+            profile: _selectedProfile,
+            preference: RoutingPreference.shortest,
+          );
+          if (legB == null || legB.isEmpty) continue;
+
+          final combined = _joinRouteResults(legA, legB);
+          if (combined.elevationGainMeters > bestGain) {
+            bestGain = combined.elevationGainMeters;
+            bestChallenging = combined;
+          }
+        }
+
+        rawResults[RoutingPreference.mostChallenging] =
+            bestChallenging ?? rawResults[RoutingPreference.shortest];
+
+        final hard = rawResults[RoutingPreference.mostChallenging];
+        debugPrint('[Desafiante] Mejor ruta vía pico: '
+            '${hard?.totalDistanceMeters.toStringAsFixed(0)}m, '
+            '${hard?.elevationGainMeters.toStringAsFixed(1)}m subida, '
+            '${hard?.path.length} nodos');
+      }
 
       if (rawResults.values.every((result) => result == null)) {
         _errorMessage = 'No se pudo calcular una ruta entre los puntos.';
@@ -419,14 +491,6 @@ class ExploreProvider extends ChangeNotifier {
     );
   }
 
-  Future<RouteResult> _enrichRouteWithElevation(RouteResult route) async {
-    if (route.path.isEmpty) return route;
-    final enrichedPath = await _elevationService.enrichWithElevation(
-      route.path,
-    );
-    return route.withElevation(enrichedPath);
-  }
-
   _BboxPadding _bboxPaddingDegrees({
     required double startLat,
     required double endLat,
@@ -462,6 +526,37 @@ class ExploreProvider extends ChangeNotifier {
   }
 
   double _degreesToRadians(double degrees) => degrees * math.pi / 180;
+
+  RouteResult _joinRouteResults(RouteResult a, RouteResult b) {
+    final combined = [...a.path, ...b.path.skip(1)];
+    final cleanPath = _removePathLoops(combined);
+    return RouteResult(
+      path: cleanPath,
+      totalDistanceMeters: a.totalDistanceMeters + b.totalDistanceMeters,
+      estimatedDurationSeconds:
+          a.estimatedDurationSeconds + b.estimatedDurationSeconds,
+    ).withElevation(cleanPath);
+  }
+
+  List<GeoNode> _removePathLoops(List<GeoNode> path) {
+    final result = <GeoNode>[];
+    final indexById = <int, int>{};
+
+    for (final node in path) {
+      if (indexById.containsKey(node.id)) {
+        final loopStart = indexById[node.id]!;
+        for (var i = result.length - 1; i > loopStart; i--) {
+          indexById.remove(result[i].id);
+        }
+        result.removeRange(loopStart + 1, result.length);
+      } else {
+        indexById[node.id] = result.length;
+        result.add(node);
+      }
+    }
+
+    return result;
+  }
 }
 
 class _AnchorSelectionResult {
