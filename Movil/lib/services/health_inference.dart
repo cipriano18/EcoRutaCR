@@ -15,9 +15,6 @@ class UserHealthInput {
     this.activityConsistencyScore,
     this.favoriteRouteDistanceKm,
     this.favoriteRouteDurationMin,
-
-    this.activityConsistencyScore,
-
   });
 
   final double? weightKg;
@@ -35,9 +32,6 @@ class UserHealthInput {
   final double? favoriteRouteDistanceKm;
   final double? favoriteRouteDurationMin;
 
-  final double? activityConsistencyScore;
-
-
   factory UserHealthInput.fromUserMap(Map<String, dynamic> data) {
     return UserHealthInput(
       weightKg: _toDouble(data['weight_kg']),
@@ -54,9 +48,6 @@ class UserHealthInput {
       activityConsistencyScore: _toDouble(data['activity_consistency_score']),
       favoriteRouteDistanceKm: _toDouble(data['favorite_route_distance_km']),
       favoriteRouteDurationMin: _toDouble(data['favorite_route_duration_min']),
-
-      activityConsistencyScore: _toDouble(data['activity_consistency_score']),
-
     );
   }
 

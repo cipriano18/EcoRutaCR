@@ -35,8 +35,6 @@ class UserModel {
   final double? _favoriteRouteDistanceKm;
   final double? _favoriteRouteDurationMin;
 
-  final double? _activityConsistencyScore;
-
   final double? _bmi;
   final String? _bmiCategory;
   final String? _activityLevel;
@@ -69,8 +67,6 @@ class UserModel {
     double? favoriteRouteDistanceKm,
     double? favoriteRouteDurationMin,
 
-    double? activityConsistencyScore,
-
     double? bmi,
     String? bmiCategory,
     String? activityLevel,
@@ -94,8 +90,6 @@ class UserModel {
        _activityConsistencyScore = activityConsistencyScore,
        _favoriteRouteDistanceKm = favoriteRouteDistanceKm,
        _favoriteRouteDurationMin = favoriteRouteDurationMin,
-
-       _activityConsistencyScore = activityConsistencyScore,
 
        _bmi = bmi,
        _bmiCategory = bmiCategory,
@@ -130,8 +124,6 @@ class UserModel {
   double? get favoriteRouteDistanceKm => _favoriteRouteDistanceKm;
   double? get favoriteRouteDurationMin => _favoriteRouteDurationMin;
 
-  double? get activityConsistencyScore => _activityConsistencyScore;
-
   double? get bmi => _bmi;
   String? get bmiCategory => _bmiCategory;
   String? get activityLevel => _activityLevel;
@@ -157,9 +149,6 @@ class UserModel {
     activityConsistencyScore: _activityConsistencyScore,
     favoriteRouteDistanceKm: _favoriteRouteDistanceKm,
     favoriteRouteDurationMin: _favoriteRouteDurationMin,
-
-    activityConsistencyScore: _activityConsistencyScore,
-
   );
 
   /// Resultado de inferencia usando datos existentes o derivando localmente.
@@ -219,8 +208,6 @@ class UserModel {
       favoriteRouteDistanceKm: _toDouble(data['favorite_route_distance_km']),
       favoriteRouteDurationMin: _toDouble(data['favorite_route_duration_min']),
 
-      activityConsistencyScore: _toDouble(data['activity_consistency_score']),
-
       bmi: _toDouble(data['bmi']),
       bmiCategory: data['bmi_category']?.toString(),
       activityLevel: data['activity_level']?.toString(),
@@ -256,8 +243,6 @@ class UserModel {
     double? favoriteRouteDistanceKm,
     double? favoriteRouteDurationMin,
 
-    double? activityConsistencyScore,
-
     double? bmi,
     String? bmiCategory,
     String? activityLevel,
@@ -292,9 +277,6 @@ class UserModel {
           favoriteRouteDistanceKm ?? _favoriteRouteDistanceKm,
       favoriteRouteDurationMin:
           favoriteRouteDurationMin ?? _favoriteRouteDurationMin,
-
-      activityConsistencyScore:
-          activityConsistencyScore ?? _activityConsistencyScore,
 
       bmi: bmi ?? _bmi,
       bmiCategory: bmiCategory ?? _bmiCategory,
