@@ -6,14 +6,12 @@ import 'package:ecoruta/models/geo_node.dart';
 import 'package:ecoruta/models/route_profile.dart';
 import 'package:ecoruta/services/routing/route_result.dart';
 
-/// Objetivos de optimización que puede seguir el algoritmo A*.
-enum RoutingPreference { shortest, fastest, mostChallenging }
+enum RoutingPreference { shortest, mostChallenging }
 
 /// Resuelve rutas sobre el grafo de la app usando A* y heurísticas simples.
 class AStarRouter {
   const AStarRouter();
 
-  /// Busca una ruta entre dos nodos según perfil y preferencia de cálculo.
   RouteResult? findRoute({
     required List<GeoNode> nodes,
     required List<GeoEdge> edges,
@@ -139,10 +137,15 @@ class AStarRouter {
     return sorted.take(limit).toList(growable: false);
   }
 
+  /// Retorna los nodos que pertenecen a la componente conexa más grande del grafo.
+  List<GeoNode> mainComponentNodes(List<GeoNode> nodes, List<GeoEdge> edges) =>
+      _mainComponentNodes(nodes, edges);
+
   List<GeoNode> _mainComponentNodes(List<GeoNode> nodes, List<GeoEdge> edges) {
     final adj = <int, List<int>>{};
     for (final e in edges) {
       adj.putIfAbsent(e.fromNodeId, () => []).add(e.toNodeId);
+      adj.putIfAbsent(e.toNodeId, () => []).add(e.fromNodeId);
     }
 
     final nodeIds = {for (final n in nodes) n.id};
@@ -187,54 +190,15 @@ class AStarRouter {
     switch (preference) {
       case RoutingPreference.shortest:
         return edge.distanceMeters;
-      case RoutingPreference.fastest:
-        return _edgeTravelTimeSeconds(edge, profile);
       case RoutingPreference.mostChallenging:
-        final climbMeters = _positiveElevationGain(fromNode, toNode);
-        final climbRewardFactor = 1 + (climbMeters / 12);
-        return (edge.distanceMeters / climbRewardFactor) +
-            (edge.distanceMeters * 0.15);
+        return edge.distanceMeters;
     }
   }
 
   double _edgeTravelTimeSeconds(GeoEdge edge, RouteProfile profile) {
     final baseSpeed = _baseSpeedMps(profile);
     if (baseSpeed <= 0) return double.infinity;
-    return edge.distanceMeters * _terrainTimeFactor(edge, profile) / baseSpeed;
-  }
-
-  double _terrainTimeFactor(GeoEdge edge, RouteProfile profile) {
-    final highway = edge.tags['highway'] ?? '';
-
-    switch (profile) {
-      case RouteProfile.cycling:
-        return switch (highway) {
-          'cycleway' => 0.9,
-          'residential' || 'service' || 'living_street' => 1.0,
-          'path' => 1.2,
-          'track' => 1.35,
-          'steps' => 4.0,
-          _ => 1.1,
-        };
-      case RouteProfile.running:
-        return switch (highway) {
-          'footway' || 'path' => 1.0,
-          'pedestrian' || 'living_street' => 0.95,
-          'track' => 1.1,
-          'service' || 'residential' => 1.05,
-          'steps' => 1.9,
-          _ => 1.1,
-        };
-      case RouteProfile.hiking:
-        return switch (highway) {
-          'path' || 'footway' => 1.0,
-          'pedestrian' => 0.95,
-          'track' => 1.15,
-          'service' || 'residential' || 'living_street' => 1.05,
-          'steps' => 1.75,
-          _ => 1.1,
-        };
-    }
+    return edge.distanceMeters / baseSpeed;
   }
 
   double _baseSpeedMps(RouteProfile profile) {
@@ -246,16 +210,6 @@ class AStarRouter {
       case RouteProfile.hiking:
         return 1.11;
     }
-  }
-
-  double _maxHeuristicSpeed(RouteProfile profile) {
-    final baseSpeed = _baseSpeedMps(profile);
-    final minTerrainFactor = switch (profile) {
-      RouteProfile.cycling => 0.9,
-      RouteProfile.running => 0.95,
-      RouteProfile.hiking => 0.95,
-    };
-    return baseSpeed / minTerrainFactor;
   }
 
   double _heuristic(
@@ -273,10 +227,8 @@ class AStarRouter {
     switch (preference) {
       case RoutingPreference.shortest:
         return distance;
-      case RoutingPreference.fastest:
-        return distance / _maxHeuristicSpeed(profile);
       case RoutingPreference.mostChallenging:
-        return 0;
+        return distance;
     }
   }
 

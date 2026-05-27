@@ -27,7 +27,6 @@ class GenerateTab extends StatefulWidget {
 
 class _GenerateTabState extends State<GenerateTab> {
   static const _primaryColor = Color(0xFF012D1D);
-  static const _primaryFixed = Color(0xFFC1ECD4);
   static const _surfaceLow = Color(0xFFF3F4F5);
   static const _secondaryContainer = Color(0xFFAEEECB);
   static const _tertiaryContainer = Color(0xFF721D00);
@@ -36,7 +35,7 @@ class _GenerateTabState extends State<GenerateTab> {
   final MapController _mapController = MapController();
   final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
-  static const _selectedPreference = RoutingPreference.shortest;
+  RoutingPreference _selectedPreference = RoutingPreference.shortest;
   RouteProfile _selectedProfile = RouteProfile.hiking;
   LatLng? _startPoint;
   LatLng? _destinationPoint;
@@ -169,6 +168,7 @@ class _GenerateTabState extends State<GenerateTab> {
       startLon: _startPoint!.longitude,
       endLat: _destinationPoint!.latitude,
       endLon: _destinationPoint!.longitude,
+      preference: _selectedPreference,
     );
   }
 
@@ -274,34 +274,20 @@ class _GenerateTabState extends State<GenerateTab> {
               icon: Icons.straighten_rounded,
               accentColor: _primaryColor,
               backgroundColor: _surfaceLow,
-              selected: true,
-              onTap: () {},
-            ),
-            const SizedBox(height: 12),
-            PreferenceCard(
-              title: 'Más Rapida',
-              subtitle: 'Minimiza el tiempo estimado',
-              description:
-                  'La dejaremos fuera del flujo principal mientras estabilizamos el grafo base por actividad.',
-              icon: Icons.bolt_rounded,
-              accentColor: _primaryColor,
-              backgroundColor: _primaryFixed,
-              badgeText: 'PROXIMAMENTE',
-              selected: false,
-              onTap: () {},
+              selected: _selectedPreference == RoutingPreference.shortest,
+              onTap: () => setState(() => _selectedPreference = RoutingPreference.shortest),
             ),
             const SizedBox(height: 12),
             PreferenceCard(
               title: 'Más Desafiante',
               subtitle: 'Favorece el desnivel positivo',
               description:
-                  'Volverá después de validar que la ruta más corta use un grafo amplio y conectado.',
+                  'Prioriza segmentos con mayor ganancia de elevación en el recorrido.',
               icon: Icons.terrain_rounded,
               accentColor: _tertiaryContainer,
               backgroundColor: _tertiaryFixed,
-              badgeText: 'PROXIMAMENTE',
-              selected: false,
-              onTap: () {},
+              selected: _selectedPreference == RoutingPreference.mostChallenging,
+              onTap: () => setState(() => _selectedPreference = RoutingPreference.mostChallenging),
             ),
             const SizedBox(height: 24),
             const _SectionTitle(title: 'Tipo de actividad'),
@@ -401,15 +387,15 @@ class _GenerateTabState extends State<GenerateTab> {
                 iconColor: Colors.redAccent,
               )
             else if (!_hasGenerated)
-              const _InfoCard(
+              _InfoCard(
                 message:
-                    'Selecciona la actividad, el origen y el destino para calcular la ruta más corta.',
+                    'Selecciona la actividad, el origen y el destino para calcular la ruta ${_preferenceLabel()}.',
                 icon: Icons.route_rounded,
                 iconColor: _primaryColor,
               )
             else if (exploreProvider.isLoading)
-              const _InfoCard(
-                message: 'Calculando la ruta más corta...',
+              _InfoCard(
+                message: 'Calculando la ruta ${_preferenceLabel()}...',
                 icon: Icons.sync_rounded,
                 iconColor: _primaryColor,
               )
@@ -476,15 +462,24 @@ class _GenerateTabState extends State<GenerateTab> {
       return 'Aun no se han generado sugerencias';
     }
     if (provider.isLoading) {
-      return 'Calculando ruta más corta para ${_activityLabel(_selectedProfile).toLowerCase()}';
+      return 'Calculando ruta ${_preferenceLabel()} para ${_activityLabel(_selectedProfile).toLowerCase()}';
     }
     if (provider.errorMessage != null) {
-      return 'No se pudo generar la ruta más corta con los puntos elegidos';
+      return 'No se pudo generar la ruta ${_preferenceLabel()} con los puntos elegidos';
     }
     if (selectedRoute == null) {
-      return 'No hubo resultado para la ruta más corta';
+      return 'No hubo resultado para la ruta ${_preferenceLabel()}';
     }
-    return 'Resultado real de la ruta más corta para ${_activityLabel(_selectedProfile).toLowerCase()}';
+    return 'Resultado real de la ruta ${_preferenceLabel()} para ${_activityLabel(_selectedProfile).toLowerCase()}';
+  }
+
+  String _preferenceLabel() {
+    switch (_selectedPreference) {
+      case RoutingPreference.shortest:
+        return 'más corta';
+      case RoutingPreference.mostChallenging:
+        return 'más desafiante';
+    }
   }
 
   String _activityLabel(RouteProfile profile) {
@@ -503,8 +498,6 @@ class _GenerateTabState extends State<GenerateTab> {
     switch (preference) {
       case RoutingPreference.shortest:
         return '$activity - Ruta más corta';
-      case RoutingPreference.fastest:
-        return '$activity - Ruta más rapida';
       case RoutingPreference.mostChallenging:
         return '$activity - Ruta más desafiante';
     }
@@ -514,8 +507,6 @@ class _GenerateTabState extends State<GenerateTab> {
     switch (preference) {
       case RoutingPreference.shortest:
         return _secondaryContainer;
-      case RoutingPreference.fastest:
-        return _primaryFixed;
       case RoutingPreference.mostChallenging:
         return _tertiaryFixed;
     }
@@ -525,8 +516,6 @@ class _GenerateTabState extends State<GenerateTab> {
     switch (preference) {
       case RoutingPreference.shortest:
         return Icons.straighten_rounded;
-      case RoutingPreference.fastest:
-        return Icons.bolt_rounded;
       case RoutingPreference.mostChallenging:
         return Icons.terrain_rounded;
     }

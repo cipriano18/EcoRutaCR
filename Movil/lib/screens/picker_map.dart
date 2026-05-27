@@ -62,7 +62,7 @@ class _PickerMapScreenState extends State<PickerMapScreen>
         : widget.initialStartPoint;
     _selectedDestinationPoint = widget.initialDestinationPoint;
     _activeTarget = _showsDualPoint
-        ? _SelectionTarget.destination
+        ? _SelectionTarget.start
         : _SelectionTarget.destination;
 
     if (_selectedStartPoint != null) {

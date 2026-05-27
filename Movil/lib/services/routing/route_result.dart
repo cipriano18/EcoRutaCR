@@ -24,7 +24,6 @@ class RouteResult {
   /// Indica si la ruta no contiene nodos utilizables.
   bool get isEmpty => path.isEmpty;
 
-  /// Distancia total lista para mostrar en la UI.
   String get formattedDistance {
     if (totalDistanceMeters >= 1000) {
       return '${(totalDistanceMeters / 1000).toStringAsFixed(1)} km';
@@ -32,7 +31,6 @@ class RouteResult {
     return '${totalDistanceMeters.round()} m';
   }
 
-  /// Duración estimada formateada para lectura humana.
   String get formattedDuration {
     final hours = estimatedDurationSeconds ~/ 3600;
     final minutes = (estimatedDurationSeconds % 3600) ~/ 60;

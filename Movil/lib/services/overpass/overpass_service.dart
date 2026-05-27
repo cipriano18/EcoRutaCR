@@ -43,12 +43,15 @@ class OverpassService {
   }
 
   /// Descarga datos OSM dentro de un bounding box para el perfil indicado.
+  /// Con [challengingMode] restringe a tipos de vías más exigentes (senderos,
+  /// trochas, ciclovías), produciendo un grafo mucho más pequeño.
   Future<Map<String, dynamic>> fetchRoutesInBoundingBox({
     required double south,
     required double west,
     required double north,
     required double east,
     required RouteProfile profile,
+    bool challengingMode = false,
   }) {
     final query = buildBoundingBoxQuery(
       south: south,
@@ -56,6 +59,7 @@ class OverpassService {
       north: north,
       east: east,
       profile: profile,
+      challengingMode: challengingMode,
     );
 
     return executeRawQuery(query);
@@ -85,13 +89,14 @@ class OverpassService {
     required double north,
     required double east,
     required RouteProfile profile,
+    bool challengingMode = false,
   }) {
     final bbox = '($south,$west,$north,$east)';
     return '''
 [out:json][timeout:25];
 (
   ${_buildRelationQuery(profile, bbox)}
-  ${_buildWayQuery(profile, bbox)}
+  ${_buildWayQuery(profile, bbox, challengingMode: challengingMode)}
 );
 out body;
 >;
@@ -127,35 +132,45 @@ out skel qt;
     return buffer.toString();
   }
 
-  String _buildWayQuery(RouteProfile profile, String areaSelector) {
+  String _buildWayQuery(
+    RouteProfile profile,
+    String areaSelector, {
+    bool challengingMode = false,
+  }) {
     final buffer = StringBuffer();
     final accessFilter = _accessFilter(profile);
+    final highways = challengingMode
+        ? profile.challengingHighwayValues
+        : profile.highwayValues;
 
-    for (final highwayValue in profile.highwayValues) {
+    for (final highwayValue in highways) {
       buffer.writeln(
         'way["highway"="$highwayValue"]$accessFilter$areaSelector;',
       );
     }
 
-    switch (profile) {
-      case RouteProfile.hiking:
-        buffer.writeln(
-          'way["foot"]["foot"!="no"]${_baseExclusionFilter()}$areaSelector;',
-        );
-        break;
-      case RouteProfile.cycling:
-        buffer.writeln(
-          'way["bicycle"]["bicycle"!="no"]${_baseExclusionFilter()}$areaSelector;',
-        );
-        buffer.writeln(
-          'way["cycleway"]${_baseExclusionFilter()}$areaSelector;',
-        );
-        break;
-      case RouteProfile.running:
-        buffer.writeln(
-          'way["foot"]["foot"!="no"]${_baseExclusionFilter()}$areaSelector;',
-        );
-        break;
+    // Los filtros adicionales por tag solo aplican en modo normal.
+    if (!challengingMode) {
+      switch (profile) {
+        case RouteProfile.hiking:
+          buffer.writeln(
+            'way["foot"]["foot"!="no"]${_baseExclusionFilter()}$areaSelector;',
+          );
+          break;
+        case RouteProfile.cycling:
+          buffer.writeln(
+            'way["bicycle"]["bicycle"!="no"]${_baseExclusionFilter()}$areaSelector;',
+          );
+          buffer.writeln(
+            'way["cycleway"]${_baseExclusionFilter()}$areaSelector;',
+          );
+          break;
+        case RouteProfile.running:
+          buffer.writeln(
+            'way["foot"]["foot"!="no"]${_baseExclusionFilter()}$areaSelector;',
+          );
+          break;
+      }
     }
 
     return buffer.toString();

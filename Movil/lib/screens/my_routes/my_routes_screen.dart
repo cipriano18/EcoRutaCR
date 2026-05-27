@@ -448,8 +448,6 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
     switch (preference) {
       case RoutingPreference.shortest:
         return 'Más cortas';
-      case RoutingPreference.fastest:
-        return 'Más rapidas';
       case RoutingPreference.mostChallenging:
         return 'Más desafiantes';
     }

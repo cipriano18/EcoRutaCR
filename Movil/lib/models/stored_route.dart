@@ -335,8 +335,6 @@ class StoredRoute {
 
   static RoutingPreference _routingPreferenceFromString(String? value) {
     switch (value) {
-      case 'fastest':
-        return RoutingPreference.fastest;
       case 'mostChallenging':
         return RoutingPreference.mostChallenging;
       case 'shortest':
