@@ -20,7 +20,9 @@
         "font_awesome_flutter",
         "geolocator",
         "http",
+
         "image",
+
         "latlong2",
         "provider",
         "shared_preferences",
@@ -815,6 +817,7 @@
       "dependencies": [
         "meta"
       ]
+
     },
     {
       "name": "image",
@@ -858,6 +861,7 @@
         "collection",
         "meta"
       ]
+
     }
   ],
   "configVersion": 1

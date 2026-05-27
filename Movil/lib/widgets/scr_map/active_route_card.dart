@@ -8,7 +8,7 @@ class ActiveRouteCard extends StatefulWidget {
   final VoidCallback? onPause;
   final VoidCallback? onResume;
   final VoidCallback? onCancel;
-  final VoidCallback? onFinish;
+  final ValueChanged<Duration>? onFinish;
 
   const ActiveRouteCard({
     super.key,
@@ -78,7 +78,7 @@ class _ActiveRouteCardState extends State<ActiveRouteCard> {
   /// Finaliza la sesión activa y entrega el tiempo transcurrido.
   void _finishRoute() {
     _activeStopwatch.stop();
-    widget.onFinish?.call();
+    widget.onFinish?.call(_activeStopwatch.elapsed);
   }
 
   @override

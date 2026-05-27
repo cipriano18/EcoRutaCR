@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecoruta/models/user_model.dart';
+import 'package:ecoruta/services/health_inference.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -65,6 +66,9 @@ class AuthService {
     required String password,
     required int avatarId,
     required String favoriteActivity,
+    required double weightKg,
+    required int heightCm,
+    required DateTime birthDate,
   }) async {
     final userCredential = await _auth.createUserWithEmailAndPassword(
       email: email.trim(),
@@ -80,6 +84,18 @@ class AuthService {
       );
     }
 
+    final inferredAt = DateTime.now();
+    final healthInference = HealthInferenceEngine.evaluate(
+      UserHealthInput(
+        weightKg: weightKg,
+        heightCm: heightCm.toDouble(),
+        birthDate: birthDate,
+        favoriteActivity: favoriteActivity.trim(),
+        completedRoutes: 0,
+        kmCounter: 0,
+      ),
+    );
+
     await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
       'email': email.trim(),
@@ -87,10 +103,14 @@ class AuthService {
       'address': address.trim(),
       'avatarId': avatarId,
       'favoriteActivity': favoriteActivity.trim(),
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
+      'birth_date': Timestamp.fromDate(birthDate),
       'completed_routes': 0,
       'km_counter': 0,
       'streak_started_at': null,
       'streak_deadline_at': null,
+
       'weight_kg': null,
       'height_cm': null,
       'birth_date': null,
@@ -107,6 +127,16 @@ class AuthService {
       'wellness_status': null,
       'wellness_score': null,
       'inference_updated_at': null,
+
+      'routes_per_week_avg': null,
+      'km_per_week_avg': null,
+      'minutes_per_week_avg': null,
+      'activity_consistency_score': null,
+      'activity_level': null,
+      'wellness_status': null,
+      'wellness_score': null,
+      ...healthInference.toInitialFirestorePatch(inferredAt: inferredAt),
+
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -156,33 +186,72 @@ class AuthService {
   }
 
   /// Actualiza los campos editables del perfil.
-  Future<void> updateProfile({
-    required String fullName,
-    required String address,
-    required String favoriteActivity,
-    double? weightKg,
-    double? heightCm,
-    DateTime? birthDate,
-  }) async {
-    final user = _auth.currentUser;
+ Future<void> updateProfile({
+  required String fullName,
+  required String address,
+  required String favoriteActivity,
+  double? weightKg,
+  double? heightCm,
+  DateTime? birthDate,
+}) async {
+  final user = _auth.currentUser;
 
-    if (user == null) {
-      throw FirebaseAuthException(
-        code: 'user-null',
-        message: 'No hay un usuario autenticado',
-      );
-    }
+  if (user == null) {
+    throw FirebaseAuthException(
+      code: 'user-null',
+      message: 'No hay un usuario autenticado',
+    );
+  }
 
-    await _firestore.collection('users').doc(user.uid).update({
-      'fullName': fullName.trim(),
-      'address': address.trim(),
-      'favoriteActivity': favoriteActivity.trim(),
-      'weight_kg': weightKg,
-      'height_cm': heightCm,
-      'birth_date': birthDate,
-      'updatedAt': FieldValue.serverTimestamp(),
+  final userDoc = _firestore.collection('users').doc(user.uid);
+
+  final snapshot = await userDoc.get();
+
+  final currentData = Map<String, dynamic>.from(
+    snapshot.data() ?? {},
+  );
+
+  final nextHealthInput = UserHealthInput.fromUserMap({
+    ...currentData,
+    'weight_kg': weightKg,
+    'height_cm': heightCm,
+    'birth_date': birthDate,
+    'favoriteActivity': favoriteActivity.trim(),
+  });
+
+  final healthInference = HealthInferenceEngine.evaluate(
+    nextHealthInput,
+  );
+
+  final patch = <String, dynamic>{
+    'fullName': fullName.trim(),
+    'address': address.trim(),
+    'favoriteActivity': favoriteActivity.trim(),
+
+    'weight_kg': weightKg,
+    'height_cm': heightCm,
+
+    'birth_date':
+        birthDate == null
+            ? null
+            : Timestamp.fromDate(birthDate),
+
+    ...healthInference.toInitialFirestorePatch(),
+
+    'updatedAt': FieldValue.serverTimestamp(),
+  };
+
+  if (healthInference.activityLevel != null &&
+      nextHealthInput.activityConsistencyScore != null) {
+    patch.addAll({
+      'activity_level': healthInference.activityLevel,
+      'wellness_status': healthInference.wellnessStatus,
+      'wellness_score': healthInference.wellnessScore,
     });
   }
+
+  await userDoc.update(patch);
+}
 
   /// Reautentica al usuario antes de cambiar su contraseña.
   Future<void> changePassword({
@@ -251,7 +320,10 @@ class AuthService {
   }
 
   /// Registra el cumplimiento semanal de una ruta para mantener la racha.
-  Future<UserModel?> registerWeeklyRouteCompletion() async {
+  Future<UserModel?> registerWeeklyRouteCompletion({
+    required double distanceKm,
+    required double durationMinutes,
+  }) async {
     final user = _auth.currentUser;
 
     if (user == null) {
@@ -270,12 +342,68 @@ class AuthService {
     final deadlineAt = _readDate(data['streak_deadline_at']);
     final hasActiveStreak = deadlineAt != null && !deadlineAt.isBefore(now);
     final nextDeadline = now.add(const Duration(days: 7));
+    final eventsCollection = userDoc.collection('completed_route_events');
+    final eventDoc = eventsCollection.doc();
+    final windowStart = _activityWindowStart(now);
+    final recentEventsSnapshot = await eventsCollection
+        .where(
+          'completedAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(windowStart),
+        )
+        .get();
+    final recentEvents = [
+      for (final doc in recentEventsSnapshot.docs)
+        _CompletedRouteEvent.fromMap(doc.data()),
+      _CompletedRouteEvent(
+        completedAt: now,
+        distanceKm: distanceKm,
+        durationMinutes: durationMinutes,
+      ),
+    ];
+    final aggregates = _computeActivityAggregates(
+      events: recentEvents,
+      referenceTime: now,
+    );
+    final nextCompletedRoutes =
+        ((data['completed_routes'] as num?)?.toInt() ?? 0) + 1;
+    final nextKmCounter =
+        ((data['km_counter'] as num?)?.toDouble() ?? 0) + distanceKm;
+    final healthInference = HealthInferenceEngine.evaluate(
+      UserHealthInput(
+        weightKg: _toDouble(data['weight_kg']),
+        heightCm: _toDouble(data['height_cm']),
+        birthDate: _readDate(data['birth_date']),
+        favoriteActivity: data['favoriteActivity']?.toString(),
+        completedRoutes: nextCompletedRoutes,
+        kmCounter: nextKmCounter,
+        routesPerWeekAvg: aggregates.routesPerWeekAverage,
+        kmPerWeekAvg: aggregates.kmPerWeekAverage,
+        minutesPerWeekAvg: aggregates.minutesPerWeekAverage,
+        activityConsistencyScore: aggregates.activityConsistencyScore,
+      ),
+    );
 
-    await userDoc.set({
+    final batch = _firestore.batch();
+    batch.set(eventDoc, {
+      'completedAt': Timestamp.fromDate(now),
+      'distanceKm': distanceKm,
+      'durationMinutes': durationMinutes,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(userDoc, {
       'streak_started_at': hasActiveStreak ? startedAt ?? now : now,
       'streak_deadline_at': nextDeadline,
+
+      'completed_routes': nextCompletedRoutes,
+      'km_counter': nextKmCounter,
+      'routes_per_week_avg': aggregates.routesPerWeekAverage,
+      'km_per_week_avg': aggregates.kmPerWeekAverage,
+      'minutes_per_week_avg': aggregates.minutesPerWeekAverage,
+      'activity_consistency_score': aggregates.activityConsistencyScore,
+      ...healthInference.toFirestorePatch(inferredAt: now),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    await batch.commit();
 
     final refreshed = await userDoc.get();
     if (!refreshed.exists || refreshed.data() == null) return null;
@@ -311,6 +439,53 @@ class AuthService {
     return null;
   }
 
+  double? _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
+  DateTime _activityWindowStart(DateTime referenceTime) {
+    final startOfWeek = DateTime(
+      referenceTime.year,
+      referenceTime.month,
+      referenceTime.day,
+    ).subtract(Duration(days: referenceTime.weekday - 1));
+    return startOfWeek.subtract(const Duration(days: 28));
+  }
+
+  _ActivityAggregates _computeActivityAggregates({
+    required List<_CompletedRouteEvent> events,
+    required DateTime referenceTime,
+  }) {
+    final windowStart = _activityWindowStart(referenceTime);
+    final relevantEvents = events
+        .where((event) => !event.completedAt.isBefore(windowStart))
+        .toList(growable: false);
+
+    const trackedWeeks = 5.0;
+    var totalDistanceKm = 0.0;
+    var totalDurationMinutes = 0.0;
+    final activeWeeks = <String>{};
+
+    for (final event in relevantEvents) {
+      totalDistanceKm += event.distanceKm;
+      totalDurationMinutes += event.durationMinutes;
+      final weekStart = DateTime(
+        event.completedAt.year,
+        event.completedAt.month,
+        event.completedAt.day,
+      ).subtract(Duration(days: event.completedAt.weekday - 1));
+      activeWeeks.add(weekStart.toIso8601String());
+    }
+
+    return _ActivityAggregates(
+      routesPerWeekAverage: relevantEvents.length / trackedWeeks,
+      kmPerWeekAverage: totalDistanceKm / trackedWeeks,
+      minutesPerWeekAverage: totalDurationMinutes / trackedWeeks,
+      activityConsistencyScore: (activeWeeks.length / trackedWeeks) * 100,
+    );
+  }
+
   /// Cierra la sesión activa en Firebase Auth.
   Future<void> logout({bool clearRememberedLogin = true}) async {
     await _auth.signOut();
@@ -318,6 +493,40 @@ class AuthService {
       await saveRememberedLogin(rememberMe: false, email: '');
     }
   }
+}
+
+class _CompletedRouteEvent {
+  const _CompletedRouteEvent({
+    required this.completedAt,
+    required this.distanceKm,
+    required this.durationMinutes,
+  });
+
+  final DateTime completedAt;
+  final double distanceKm;
+  final double durationMinutes;
+
+  factory _CompletedRouteEvent.fromMap(Map<String, dynamic> data) {
+    return _CompletedRouteEvent(
+      completedAt: (data['completedAt'] as Timestamp).toDate(),
+      distanceKm: (data['distanceKm'] as num?)?.toDouble() ?? 0,
+      durationMinutes: (data['durationMinutes'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class _ActivityAggregates {
+  const _ActivityAggregates({
+    required this.routesPerWeekAverage,
+    required this.kmPerWeekAverage,
+    required this.minutesPerWeekAverage,
+    required this.activityConsistencyScore,
+  });
+
+  final double routesPerWeekAverage;
+  final double kmPerWeekAverage;
+  final double minutesPerWeekAverage;
+  final double activityConsistencyScore;
 }
 
 /// Estado local usado para precargar el formulario de inicio de sesión.

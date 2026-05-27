@@ -99,10 +99,14 @@ service cloud.firestore {
         'routes_per_week_avg',
         'km_per_week_avg',
         'minutes_per_week_avg',
+
         'last_route_at',
         'activity_consistency_score',
         'favorite_route_distance_km',
         'favorite_route_duration_min',
+
+        'activity_consistency_score',
+     
         'bmi',
         'bmi_category',
         'activity_level',
@@ -167,7 +171,9 @@ service cloud.firestore {
         (data.km_per_week_avg == null || data.km_per_week_avg >= 0) &&
         isValidNullableNumber(data.minutes_per_week_avg) &&
         (data.minutes_per_week_avg == null || data.minutes_per_week_avg >= 0) &&
+
         isValidNullableTimestamp(data.last_route_at) &&
+
         isValidNullableNumber(data.activity_consistency_score) &&
         (data.activity_consistency_score == null ||
           (data.activity_consistency_score >= 0 &&
@@ -178,6 +184,7 @@ service cloud.firestore {
         isValidNullableNumber(data.favorite_route_duration_min) &&
         (data.favorite_route_duration_min == null ||
           data.favorite_route_duration_min >= 0) &&
+
         isValidNullableNumber(data.bmi) &&
         (data.bmi == null || (data.bmi >= 0 && data.bmi <= 100)) &&
         isValidBmiCategory(data.bmi_category) &&
@@ -198,11 +205,55 @@ service cloud.firestore {
         'weight_kg',
         'height_cm',
         'birth_date',
+
+        'completed_routes',
+        'km_counter',
+        'routes_per_week_avg',
+        'km_per_week_avg',
+        'minutes_per_week_avg',
+        'activity_consistency_score',
+        'bmi',
+        'bmi_category',
+        'activity_level',
+        'wellness_status',
+        'wellness_score',
+        'inference_updated_at',
+
         'streak_started_at',
         'streak_deadline_at',
         'updatedAt'
       ]);
     }
+
+    function hasOnlyCompletedRouteEventFields(data) {
+      return data.keys().hasOnly([
+        'completedAt',
+        'distanceKm',
+        'durationMinutes',
+        'createdAt'
+      ]);
+    }
+
+    function hasRequiredCompletedRouteEventFields(data) {
+      return data.keys().hasAll([
+        'completedAt',
+        'distanceKm',
+        'durationMinutes',
+        'createdAt'
+      ]);
+    }
+
+    function isValidCompletedRouteEventPayload(data) {
+      return hasOnlyCompletedRouteEventFields(data) &&
+        hasRequiredCompletedRouteEventFields(data) &&
+        data.completedAt is timestamp &&
+        data.distanceKm is number &&
+        data.distanceKm >= 0 &&
+        data.durationMinutes is number &&
+        data.durationMinutes >= 0 &&
+        data.createdAt is timestamp;
+    }
+
 
     function isValidLatLngMap(value) {
       return value is map &&
@@ -327,6 +378,16 @@ service cloud.firestore {
         );
 
       allow delete: if isUserOwner(userId) || isAdmin();
+
+
+      match /completed_route_events/{eventId} {
+        allow create: if isUserOwner(userId) &&
+          isValidCompletedRouteEventPayload(request.resource.data);
+
+        allow read: if isUserOwner(userId) || isAdmin();
+        allow update, delete: if isAdmin();
+      }
+
     }
 
     match /admins/{adminId} {

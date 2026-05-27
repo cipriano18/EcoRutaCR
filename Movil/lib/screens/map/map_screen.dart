@@ -38,11 +38,14 @@ class _MapScreenState extends State<MapScreen> {
   LatLng? _currentPosition;
   bool _loading = true;
   bool _isRouteActive = false;
+  bool _isRoutePaused = false;
   bool _hasCompassSupport = false;
   bool _isCompassModeEnabled = false;
   double? _currentElevation;
   double _heading = 0;
   double _smoothedHeading = 0;
+  double _sessionDistanceMeters = 0;
+  LatLng? _lastTrackedRoutePoint;
 
   @override
   void initState() {
@@ -106,9 +109,28 @@ class _MapScreenState extends State<MapScreen> {
             distanceFilter: 1,
           ),
         ).listen((position) {
+          final nextPosition = LatLng(position.latitude, position.longitude);
+          if (_isRouteActive && !_isRoutePaused) {
+            final lastTrackedPoint = _lastTrackedRoutePoint;
+            if (lastTrackedPoint != null) {
+              final segmentMeters = Geolocator.distanceBetween(
+                lastTrackedPoint.latitude,
+                lastTrackedPoint.longitude,
+                nextPosition.latitude,
+                nextPosition.longitude,
+              );
+              if (segmentMeters.isFinite &&
+                  segmentMeters > 0 &&
+                  segmentMeters <= 250) {
+                _sessionDistanceMeters += segmentMeters;
+              }
+            }
+            _lastTrackedRoutePoint = nextPosition;
+          }
+
           if (!mounted) return;
           setState(() {
-            _currentPosition = LatLng(position.latitude, position.longitude);
+            _currentPosition = nextPosition;
           });
           _syncLiveMapCamera();
         });
@@ -248,6 +270,24 @@ class _MapScreenState extends State<MapScreen> {
     return (current + (delta * 0.18) + 360) % 360;
   }
 
+  void _startRouteSession() {
+    setState(() {
+      _isRouteActive = true;
+      _isRoutePaused = false;
+      _sessionDistanceMeters = 0;
+      _lastTrackedRoutePoint = _currentPosition;
+    });
+  }
+
+  void _cancelRouteSession() {
+    setState(() {
+      _isRouteActive = false;
+      _isRoutePaused = false;
+      _sessionDistanceMeters = 0;
+      _lastTrackedRoutePoint = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -361,6 +401,32 @@ class _MapScreenState extends State<MapScreen> {
               accentColor: _orangeColor,
             ),
           ),
+          if (!_isRouteActive)
+            Positioned(
+              left: 24,
+              right: 24,
+              bottom: 24,
+              child: SafeArea(
+                child: ElevatedButton.icon(
+                  onPressed: _currentPosition == null
+                      ? null
+                      : _startRouteSession,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primaryColor,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text(
+                    'Iniciar ruta',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ),
           if (_isRouteActive)
             Positioned(
               left: 10,
@@ -369,32 +435,47 @@ class _MapScreenState extends State<MapScreen> {
               child: ActiveRouteCard(
                 routeName: 'Volcán Poás Trail',
                 onPause: () {
-                  debugPrint('Ruta pausada');
+                  setState(() {
+                    _isRoutePaused = true;
+                    _lastTrackedRoutePoint = _currentPosition;
+                  });
                 },
                 onResume: () {
-                  debugPrint('Ruta reanudada');
+                  setState(() {
+                    _isRoutePaused = false;
+                    _lastTrackedRoutePoint = _currentPosition;
+                  });
                 },
                 onCancel: () {
                   if (!mounted) return;
-                  setState(() => _isRouteActive = false);
+                  _cancelRouteSession();
                 },
-                onFinish: () async {
+                onFinish: (elapsed) async {
+                  final userProvider = Provider.of<UserProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final distanceKm = _sessionDistanceMeters / 1000;
+                  final durationMinutes = math.max(
+                    elapsed.inSeconds / 60,
+                    1 / 60,
+                  );
                   try {
                     final refreshedUser = await AuthService()
-                        .registerWeeklyRouteCompletion();
+                        .registerWeeklyRouteCompletion(
+                          distanceKm: distanceKm,
+                          durationMinutes: durationMinutes,
+                        );
                     if (!mounted) return;
 
                     if (refreshedUser != null) {
-                      Provider.of<UserProvider>(
-                        context,
-                        listen: false,
-                      ).setUser(refreshedUser);
+                      userProvider.setUser(refreshedUser);
                     }
                   } catch (_) {
                     // Evita romper la UI si falla la actualizacion remota.
                   } finally {
                     if (mounted) {
-                      setState(() => _isRouteActive = false);
+                      _cancelRouteSession();
                     }
                   }
                 },
