@@ -1,8 +1,17 @@
 import 'package:ecoruta/data/costa_rica_locations.dart';
+import 'package:ecoruta/models/route_profile.dart';
+import 'package:ecoruta/models/stored_route.dart';
+import 'package:ecoruta/providers/user_provider.dart';
+import 'package:ecoruta/screens/explore/route_preview_screen.dart';
+import 'package:ecoruta/services/recommendations_service.dart';
+import 'package:ecoruta/services/routing/route_result.dart';
+import 'package:ecoruta/services/saved_routes_service.dart';
+import 'package:ecoruta/widgets/confirm_dialog.dart';
+import 'package:ecoruta/widgets/route_result_card.dart';
 import 'package:ecoruta/widgets/suggestion_item.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-/// Mockup de recomendaciones personalizadas basado en perfil y zona.
 class RecommendationsTab extends StatefulWidget {
   const RecommendationsTab({super.key});
 
@@ -12,27 +21,35 @@ class RecommendationsTab extends StatefulWidget {
 
 class _RecommendationsTabState extends State<RecommendationsTab> {
   static const _primaryColor = Color(0xFF012D1D);
-  static const _surface = Color(0xFFF8F9FA);
   static const _surfaceHigh = Color(0xFFE7E8E9);
   static const _surfaceHighest = Color(0xFFE1E3E4);
-  static const _surfaceLow = Color(0xFFF3F4F5);
   static const _tertiaryFixed = Color(0xFFFFB59F);
-  static const _textMain = Color(0xFF191C1D);
   static const _textMuted = Color(0xFF414844);
 
   final TextEditingController _searchController = TextEditingController();
+  final RecommendationsService _recommendationsService =
+      RecommendationsService();
+  final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
   String? _selectedZoneLabel;
   String _zoneQuery = '';
-
-  late final List<_RecommendationRoute> _allRecommendations;
+  bool _isLoading = false;
+  bool _isSaving = false;
+  String? _errorMessage;
+  int _candidateCount = 0;
+  int _savedRouteCount = 0;
   late final List<_ZoneOption> _allZones;
+  List<_RecommendationCardData> _recommendations = const [];
 
   @override
   void initState() {
     super.initState();
-    _allRecommendations = _buildMockRecommendations();
     _allZones = _buildZoneOptions();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadRecommendations();
+      }
+    });
   }
 
   @override
@@ -60,7 +77,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Mockup inicial de rutas recomendadas con filtro por zona.',
+          'Rutas sugeridas por el modelo segun tu perfil y las rutas publicas que has guardado.',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade700,
@@ -92,17 +109,47 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
           ),
         ),
         const SizedBox(height: 16),
-        if (visibleRecommendations.isEmpty)
+        if (_errorMessage != null)
+          _RecommendationsInfoCard(
+            icon: Icons.error_outline_rounded,
+            message: _errorMessage!,
+            actionLabel: 'Reintentar',
+            onAction: _loadRecommendations,
+          )
+        else if (_isLoading)
           const _RecommendationsInfoCard(
-            icon: Icons.filter_alt_off_rounded,
+            icon: Icons.sync_rounded,
+            message: 'Consultando recomendaciones del modelo...',
+          )
+        else if (visibleRecommendations.isEmpty)
+          const _RecommendationsInfoCard(
+            icon: Icons.route_rounded,
             message:
-                'No hay rutas mock para esta zona. Prueba con otra busqueda.',
+                'Todavia no hay recomendaciones disponibles para esta zona o para tu perfil actual.',
           )
         else
           ...visibleRecommendations.map(
-            (route) => Padding(
-              padding: const EdgeInsets.only(bottom: 18),
-              child: _RecommendationCard(route: route),
+            (routeData) => Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: RouteResultCard(
+                title: routeData.route.title,
+                supportingText:
+                    'Creada por ${routeData.creatorName} | match ${routeData.matchScoreLabel}',
+                distance: routeData.routeResult.formattedDistance,
+                duration: routeData.routeResult.formattedDuration,
+                elevationGain: routeData.routeResult.formattedElevationGain,
+                accentColor: _accentForProfile(routeData.route.activityProfile),
+                icon: _iconForProfile(routeData.route.activityProfile),
+                badge: 'IA',
+                isHighlighted: true,
+                buttonText: 'Ver trazado',
+                secondaryButtonText: 'Guardar',
+                isSecondaryLoading: _isSaving,
+                onSecondaryPressed: _isSaving
+                    ? null
+                    : () => _confirmSave(routeData),
+                onPressed: () => _openPreview(routeData),
+              ),
             ),
           ),
       ],
@@ -174,7 +221,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Text(
-              'IA PERSONALIZADA',
+              'TWO-TOWER',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -185,7 +232,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
           ),
           const SizedBox(height: 14),
           const Text(
-            'Rutas sugeridas',
+            'Rutas sugeridas para ti',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -196,8 +243,8 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
           const SizedBox(height: 8),
           Text(
             _selectedZoneLabel == null
-                ? 'Aqui puedes presentar recomendaciones generadas por tu modelo y mostrar rutas publicas destacadas debajo.'
-                : 'Mostrando rutas mock cercanas a $_selectedZoneLabel para acotar mejor la zona.',
+                ? 'El modelo prioriza tus rutas publicas guardadas y tu perfil para rankear nuevas opciones.'
+                : 'Mostrando sugerencias filtradas por $_selectedZoneLabel.',
             style: const TextStyle(
               fontSize: 14,
               color: _textMuted,
@@ -206,36 +253,127 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
             ),
           ),
           const SizedBox(height: 18),
-          if (_selectedZoneLabel != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: _tertiaryFixed.withValues(alpha: 0.28),
-                borderRadius: BorderRadius.circular(999),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _SummaryChip(
+                icon: Icons.analytics_rounded,
+                label: '$_candidateCount candidatas',
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.place_rounded,
-                    size: 16,
-                    color: _primaryColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _selectedZoneLabel!,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: _primaryColor,
-                    ),
-                  ),
-                ],
+              _SummaryChip(
+                icon: Icons.bookmark_rounded,
+                label: '$_savedRouteCount guardadas',
               ),
-            ),
+              if (_selectedZoneLabel != null)
+                _SummaryChip(
+                  icon: Icons.place_rounded,
+                  label: _selectedZoneLabel!,
+                ),
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _loadRecommendations() async {
+    final user = context.read<UserProvider>().user;
+    if (user == null) {
+      setState(() {
+        _errorMessage =
+            'No se encontro el usuario autenticado para consultar recomendaciones.';
+        _recommendations = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _recommendationsService.fetchRecommendations(
+        userId: user.uid,
+        topK: 12,
+      );
+      if (!mounted) return;
+      setState(() {
+        _candidateCount = response.candidateCount;
+        _savedRouteCount = response.savedRouteCount;
+      });
+
+      final publicRoutes = await _savedRoutesService.fetchPublicRoutes();
+      final byId = {
+        for (final route in publicRoutes)
+          if (route.ownerId != user.uid) route.id: route,
+      };
+      final creatorNames = await _savedRoutesService.fetchUserDisplayNames(
+        byId.values.map((route) => route.ownerId),
+      );
+
+      final visible = <_RecommendationCardData>[];
+      for (final recommendation in response.recommendations) {
+        final route = byId[recommendation.routeId];
+        if (route == null) {
+          debugPrint(
+            'Recommendation skipped: route ${recommendation.routeId} not found in Firestore public routes.',
+          );
+          continue;
+        }
+
+        try {
+          visible.add(
+            _RecommendationCardData(
+              route: route,
+              routeResult: route.toRouteResult(),
+              creatorName:
+                  creatorNames[route.ownerId]?.trim().isNotEmpty == true
+                  ? creatorNames[route.ownerId]!
+                  : 'usuario desconocido',
+              score: recommendation.score,
+            ),
+          );
+        } catch (error, stackTrace) {
+          debugPrint(
+            'Recommendation skipped for route ${route.id}: $error\n$stackTrace',
+          );
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _recommendations = visible;
+        if (response.recommendations.isNotEmpty && visible.isEmpty) {
+          _errorMessage =
+              'El modelo devolvio rutas, pero ninguna pudo renderizarse correctamente en la app.';
+        }
+      });
+    } on RecommendationsException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _recommendations = const [];
+      });
+    } on SavedRouteException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _recommendations = const [];
+      });
+    } catch (error) {
+      debugPrint('RecommendationsTab load failed: $error');
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'No se pudieron cargar las recomendaciones: $error';
+        _recommendations = const [];
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   void _selectZone(String label) {
@@ -258,20 +396,29 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         .toList(growable: false);
   }
 
-  List<_RecommendationRoute> _filteredRecommendations() {
+  List<_RecommendationCardData> _filteredRecommendations() {
     final query = (_selectedZoneLabel ?? _zoneQuery).trim().toLowerCase();
-    return _allRecommendations
-        .where((route) {
-          return query.isEmpty || route.zoneSearchText.contains(query);
-        })
+    return _recommendations
+        .where(
+          (route) =>
+              query.isEmpty ||
+              route.route.startLabel.toLowerCase().contains(query) ||
+              route.route.endLabel.toLowerCase().contains(query),
+        )
         .toList(growable: false);
   }
 
-  String _resultsSummary(int count) {
+  String _resultsSummary(int visibleCount) {
+    if (_errorMessage != null) {
+      return 'No se pudo completar la consulta del modelo';
+    }
+    if (_isLoading) {
+      return 'Consultando rutas recomendadas por IA';
+    }
     final zoneText = _selectedZoneLabel == null
-        ? 'sin zona definida'
+        ? 'sin filtro de zona'
         : _selectedZoneLabel!;
-    return '$count rutas mock disponibles en $zoneText';
+    return '$visibleCount recomendaciones visibles en $zoneText';
   }
 
   List<_ZoneOption> _buildZoneOptions() {
@@ -288,83 +435,123 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         .toList(growable: false);
   }
 
-  List<_RecommendationRoute> _buildMockRecommendations() {
-    return const [
-      _RecommendationRoute(
-        title: 'Senda del Bosque Nuboso',
-        author: 'Carlos M.',
-        zoneLabel: 'San Rafael, Heredia',
-        activity: 'Senderismo',
-        distanceKm: 12.4,
-        elevationMeters: 450,
-        durationMinutes: 200,
-        difficulty: 'Intermedio',
-        gradient: [Color(0xFF214235), Color(0xFF9DD0A5)],
+  Future<void> _confirmSave(_RecommendationCardData routeData) async {
+    final confirmed = await ConfirmDialog.mostrar(
+      context,
+      titulo: 'Guardar ruta publica',
+      mensaje: 'Deseas guardar esta ruta creada por ${routeData.creatorName}?',
+      textoConfirmar: 'Guardar',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isSaving = true);
+    try {
+      await _savedRoutesService.savePublicRouteReference(
+        route: routeData.route,
+        creatorName: routeData.creatorName,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ruta guardada en la pestaña Guardadas.')),
+      );
+    } on SavedRouteException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _openPreview(_RecommendationCardData routeData) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RoutePreviewScreen(
+          title: routeData.route.title,
+          route: routeData.routeResult,
+          profile: routeData.route.activityProfile,
+          preference: routeData.route.routingPreference,
+          startLabel: routeData.route.startLabel,
+          endLabel: routeData.route.endLabel,
+          allowSave: false,
+        ),
       ),
-      _RecommendationRoute(
-        title: 'Circuito Volcan Arenal',
-        author: 'Elena Ruiz',
-        zoneLabel: 'La Fortuna, Alajuela',
-        activity: 'Senderismo',
-        distanceKm: 8.2,
-        elevationMeters: 610,
-        durationMinutes: 165,
-        difficulty: 'Retador',
-        gradient: [Color(0xFF5E2A17), Color(0xFFF0A36D)],
+    );
+  }
+
+  Color _accentForProfile(RouteProfile profile) {
+    switch (profile) {
+      case RouteProfile.cycling:
+        return const Color(0xFFAEEECB);
+      case RouteProfile.hiking:
+        return const Color(0xFFC1ECD4);
+      case RouteProfile.running:
+        return const Color(0xFFFFB59F);
+    }
+  }
+
+  IconData _iconForProfile(RouteProfile profile) {
+    switch (profile) {
+      case RouteProfile.cycling:
+        return Icons.directions_bike_rounded;
+      case RouteProfile.hiking:
+        return Icons.hiking_rounded;
+      case RouteProfile.running:
+        return Icons.directions_run_rounded;
+    }
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  const _SummaryChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _RecommendationsTabState._tertiaryFixed.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
       ),
-      _RecommendationRoute(
-        title: 'Mirador del Pacifico',
-        author: 'Marco V.',
-        zoneLabel: 'Quepos, Puntarenas',
-        activity: 'Running',
-        distanceKm: 15,
-        elevationMeters: 230,
-        durationMinutes: 130,
-        difficulty: 'Ritmo alto',
-        gradient: [Color(0xFF005A77), Color(0xFF71D6E3)],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(width: 2),
+          Icon(icon, size: 16, color: _RecommendationsTabState._primaryColor),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _RecommendationsTabState._primaryColor,
+            ),
+          ),
+        ],
       ),
-      _RecommendationRoute(
-        title: 'Vuelta Urbana Escazu',
-        author: 'Daniela P.',
-        zoneLabel: 'Escazu, San Antonio',
-        activity: 'Running',
-        distanceKm: 6.8,
-        elevationMeters: 120,
-        durationMinutes: 50,
-        difficulty: 'Ligero',
-        gradient: [Color(0xFF28374E), Color(0xFF8AA7D7)],
-      ),
-      _RecommendationRoute(
-        title: 'Ruta Verde de Belen',
-        author: 'Rodo C.',
-        zoneLabel: 'Belen, La Ribera',
-        activity: 'Ciclismo',
-        distanceKm: 18.6,
-        elevationMeters: 180,
-        durationMinutes: 72,
-        difficulty: 'Fluido',
-        gradient: [Color(0xFF174A3B), Color(0xFF57C798)],
-      ),
-      _RecommendationRoute(
-        title: 'Ascenso Cartago Centro',
-        author: 'Luis Fer',
-        zoneLabel: 'Cartago, Occidental',
-        activity: 'Ciclismo',
-        distanceKm: 22,
-        elevationMeters: 520,
-        durationMinutes: 140,
-        difficulty: 'Fuerza',
-        gradient: [Color(0xFF3B2A17), Color(0xFFD2A56E)],
-      ),
-    ];
+    );
   }
 }
 
 class _RecommendationsInfoCard extends StatelessWidget {
-  const _RecommendationsInfoCard({required this.icon, required this.message});
+  const _RecommendationsInfoCard({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final IconData icon;
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -375,277 +562,37 @@ class _RecommendationsInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
-        children: [
-          Icon(icon, color: _RecommendationsTabState._primaryColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: _RecommendationsTabState._textMain,
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecommendationCard extends StatelessWidget {
-  const _RecommendationCard({required this.route});
-
-  final _RecommendationRoute route;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: 170,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: route.gradient,
-              ),
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  top: 18,
-                  right: 18,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.public_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 6),
-                        Text(
-                          'PUBLICA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
+          Row(
+            children: [
+              Icon(icon, color: _RecommendationsTabState._primaryColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF191C1D),
+                    height: 1.4,
                   ),
                 ),
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 18,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        route.zoneLabel,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        route.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.8,
-                          height: 1.05,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'por ${route.author}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _RecommendationsTabState._textMuted,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _RecommendationsTabState._surfaceLow,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        route.difficulty,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          color: _RecommendationsTabState._primaryColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _StatPill(
-                      icon: Icons.route_rounded,
-                      label: '${route.distanceKm.toStringAsFixed(1)} km',
-                    ),
-                    _StatPill(
-                      icon: Icons.terrain_rounded,
-                      label: '${route.elevationMeters} m',
-                    ),
-                    _StatPill(
-                      icon: Icons.schedule_rounded,
-                      label: route.formattedDuration,
-                    ),
-                    _StatPill(
-                      icon: _activityIcon(route.activity),
-                      label: route.activity,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.favorite_border_rounded),
-                        label: const Text('Guardar'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor:
-                              _RecommendationsTabState._primaryColor,
-                          side: const BorderSide(
-                            color: _RecommendationsTabState._primaryColor,
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.auto_awesome_rounded),
-                        label: const Text('Ver match'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor:
-                              _RecommendationsTabState._primaryColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh_rounded),
+                label: Text(actionLabel!),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _activityIcon(String activity) {
-    switch (activity) {
-      case 'Ciclismo':
-        return Icons.directions_bike_rounded;
-      case 'Running':
-        return Icons.directions_run_rounded;
-      case 'Senderismo':
-      default:
-        return Icons.hiking_rounded;
-    }
-  }
-}
-
-class _StatPill extends StatelessWidget {
-  const _StatPill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: _RecommendationsTabState._surface,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: _RecommendationsTabState._primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _RecommendationsTabState._textMain,
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -666,36 +613,21 @@ class _ZoneOption {
   String get searchText => '$label $title $subtitle'.toLowerCase();
 }
 
-class _RecommendationRoute {
-  const _RecommendationRoute({
-    required this.title,
-    required this.author,
-    required this.zoneLabel,
-    required this.activity,
-    required this.distanceKm,
-    required this.elevationMeters,
-    required this.durationMinutes,
-    required this.difficulty,
-    required this.gradient,
+class _RecommendationCardData {
+  const _RecommendationCardData({
+    required this.route,
+    required this.routeResult,
+    required this.creatorName,
+    required this.score,
   });
 
-  final String title;
-  final String author;
-  final String zoneLabel;
-  final String activity;
-  final double distanceKm;
-  final int elevationMeters;
-  final int durationMinutes;
-  final String difficulty;
-  final List<Color> gradient;
+  final StoredRoute route;
+  final RouteResult routeResult;
+  final String creatorName;
+  final double score;
 
-  String get zoneSearchText => zoneLabel.toLowerCase();
-
-  String get formattedDuration {
-    final hours = durationMinutes ~/ 60;
-    final minutes = durationMinutes % 60;
-    if (hours == 0) return '$minutes min';
-    if (minutes == 0) return '${hours}h';
-    return '${hours}h ${minutes}m';
+  String get matchScoreLabel {
+    final normalized = ((score + 2) / 4).clamp(0, 1);
+    return '${(normalized * 100).round()}%';
   }
 }
