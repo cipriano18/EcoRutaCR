@@ -215,9 +215,9 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
               : _savedRoutesService.watchUserRoutes(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return _buildErrorState();
-            }
-
+  print('ERROR CARGANDO MIS RUTAS: ${snapshot.error}');
+  return _buildErrorState();
+}
             if (!snapshot.hasData) {
               return const Center(
                 child: CircularProgressIndicator(color: primaryColor),
@@ -295,55 +295,63 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
   }
 
   Widget _buildFilters() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: surfaceLow,
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _buildMainTabButton(
-                  label: 'Mis creaciones',
-                  selected: _selectedTab == _MyRoutesTab.creations,
-                  onTap: () {
-                    setState(() {
-                      _selectedTab = _MyRoutesTab.creations;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildMainTabButton(
-                  label: 'Guardadas',
-                  selected: _selectedTab == _MyRoutesTab.saved,
-                  onTap: () {
-                    setState(() {
-                      _selectedTab = _MyRoutesTab.saved;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: surfaceLow,
+          borderRadius: BorderRadius.circular(22),
         ),
-        const SizedBox(height: 18),
-        Row(
+        child: Row(
           children: [
             Expanded(
-              child: _buildHorizontalChips([
-                _quickFilterChip(
-                  label: 'Todas',
-                  selected: _isQuickAllSelected,
-                  onTap: () {
-                    setState(_resetAllFilters);
-                  },
-                ),
+              child: _buildMainTabButton(
+                label: 'Mis creaciones',
+                selected: _selectedTab == _MyRoutesTab.creations,
+                onTap: () {
+                  setState(() {
+                    _selectedTab = _MyRoutesTab.creations;
+                    _resetAllFilters();
+                  });
+                },
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            Expanded(
+              child: _buildMainTabButton(
+                label: 'Guardadas',
+                selected: _selectedTab == _MyRoutesTab.saved,
+                onTap: () {
+                  setState(() {
+                    _selectedTab = _MyRoutesTab.saved;
+                    _resetAllFilters();
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      const SizedBox(height: 18),
+
+      Row(
+        children: [
+          Expanded(
+            child: _buildHorizontalChips([
+              _quickFilterChip(
+                label: 'Todas',
+                selected: _isQuickAllSelected,
+                onTap: () {
+                  setState(_resetAllFilters);
+                },
+              ),
+
+              if (_selectedTab == _MyRoutesTab.creations)
                 _quickFilterChip(
                   label: 'Privadas',
                   selected: _selectedVisibilityFilter == 'Privadas',
@@ -353,26 +361,30 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
                     });
                   },
                 ),
-              ]),
-            ),
-            const SizedBox(width: 10),
-            _buildMoreFiltersButton(),
-          ],
-        ),
-        if (_activeExtraFilters.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Filtros activos: ${_activeExtraFilters.join(' | ')}',
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: textMuted,
-            ),
+            ]),
           ),
+
+          const SizedBox(width: 10),
+
+          _buildMoreFiltersButton(),
         ],
+      ),
+
+      if (_activeExtraFilters.isNotEmpty) ...[
+        const SizedBox(height: 12),
+
+        Text(
+          'Filtros activos: ${_activeExtraFilters.join(' | ')}',
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: textMuted,
+          ),
+        ),
       ],
-    );
-  }
+    ],
+  );
+}
 
   bool get _isQuickAllSelected =>
       _selectedFilter == _allFilter &&
@@ -707,17 +719,16 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
   }
 
   IconData _iconForVisibilityFilter(String text) {
-    switch (text) {
-      case 'Publicas':
-        return Icons.public_rounded;
-      case 'Privadas':
-        return Icons.lock_rounded;
-      case _allVisibilityFilter:
-      default:
-        return Icons.visibility_rounded;
-    }
+  switch (text) {
+    case 'Públicas':
+      return Icons.public_rounded;
+    case 'Privadas':
+      return Icons.lock_rounded;
+    case _allVisibilityFilter:
+    default:
+      return Icons.visibility_rounded;
   }
-
+}
   String _labelForRoutingPreference(RoutingPreference preference) {
     switch (preference) {
       case RoutingPreference.shortest:
@@ -727,14 +738,14 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
     }
   }
 
-  String _labelForVisibility(StoredRouteVisibility visibility) {
-    switch (visibility) {
-      case StoredRouteVisibility.public:
-        return 'Publicas';
-      case StoredRouteVisibility.private:
-        return 'Privadas';
-    }
+ String _labelForVisibility(StoredRouteVisibility visibility) {
+  switch (visibility) {
+    case StoredRouteVisibility.public:
+      return 'Públicas';
+    case StoredRouteVisibility.private:
+      return 'Privadas';
   }
+}
 
   Widget _buildSavedRoutesEmptyState() {
     return Container(
