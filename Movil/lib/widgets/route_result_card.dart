@@ -11,6 +11,7 @@ class RouteResultCard extends StatelessWidget {
   final String distance;
   final String duration;
   final String elevationGain;
+  final String? supportingText;
   final Color accentColor;
   final IconData icon;
   final String? badge;
@@ -27,6 +28,7 @@ class RouteResultCard extends StatelessWidget {
     required this.distance,
     required this.duration,
     required this.elevationGain,
+    this.supportingText,
     required this.accentColor,
     required this.icon,
     this.badge,
@@ -97,7 +99,10 @@ class RouteResultCard extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [accentColor, accentColor.withValues(alpha: 0.55)],
+                          colors: [
+                            accentColor,
+                            accentColor.withValues(alpha: 0.55),
+                          ],
                         ),
                       ),
                       child: Stack(
@@ -143,6 +148,18 @@ class RouteResultCard extends StatelessWidget {
                                 letterSpacing: -0.4,
                               ),
                             ),
+                            if (supportingText != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                supportingText!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.grey.shade700,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 8),
                             Wrap(
                               spacing: 14,

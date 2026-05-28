@@ -15,9 +15,14 @@ class SavedRoutesService {
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
 
+  String? get currentUserId => _auth.currentUser?.uid;
+
   /// Referencia principal a la colección donde viven las rutas guardadas.
   CollectionReference<Map<String, dynamic>> get _routes =>
       _firestore.collection('routes');
+
+  CollectionReference<Map<String, dynamic>> get _savedPublicRoutes =>
+      _firestore.collection('saved_public_routes');
 
   /// Observa en tiempo real las rutas del usuario autenticado.
   Stream<List<StoredRoute>> watchUserRoutes() {
@@ -26,6 +31,20 @@ class SavedRoutesService {
     return _routes
         .where('ownerId', isEqualTo: uid)
         .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(StoredRoute.fromDocument)
+              .toList(growable: false),
+        );
+  }
+
+  Stream<List<StoredRoute>> watchSavedPublicRoutes() {
+    final uid = _requireUserId();
+
+    return _savedPublicRoutes
+        .where('savedByUserId', isEqualTo: uid)
+        .orderBy('savedAt', descending: true)
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
@@ -57,6 +76,44 @@ class SavedRoutesService {
         .get();
 
     return snapshot.docs.map(StoredRoute.fromDocument).toList(growable: false);
+  }
+
+  /// Resuelve nombres visibles de usuarios para enriquecer listados de rutas.
+  Future<Map<String, String>> fetchUserDisplayNames(
+    Iterable<String> userIds,
+  ) async {
+    _requireUserId();
+
+    final uniqueIds = userIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final entries = await Future.wait(
+      uniqueIds.map((userId) async {
+        try {
+          final snapshot = await _firestore
+              .collection('public_user_profiles')
+              .doc(userId)
+              .get();
+          final data = snapshot.data();
+          final fullName = (data?['fullName'] as String?)?.trim();
+          return MapEntry(
+            userId,
+            fullName == null || fullName.isEmpty
+                ? 'usuario desconocido'
+                : fullName,
+          );
+        } catch (_) {
+          return const MapEntry('', '');
+        }
+      }),
+    );
+
+    return {
+      for (final entry in entries)
+        if (entry.key.isNotEmpty)
+          entry.key: entry.value.isEmpty ? 'usuario desconocido' : entry.value,
+    };
   }
 
   /// Persiste una ruta calculada junto con su geometría comprimida.
@@ -116,10 +173,103 @@ class SavedRoutesService {
     return doc.id;
   }
 
+  Future<String> savePublicRouteReference({
+    required StoredRoute route,
+    required String creatorName,
+  }) async {
+    final uid = _requireUserId();
+
+    if (!route.isPublic) {
+      throw const SavedRouteException(
+        'Solo puedes guardar rutas publicas desde este flujo.',
+      );
+    }
+
+    if (route.ownerId == uid) {
+      throw const SavedRouteException(
+        'Esa ruta ya forma parte de tus creaciones.',
+      );
+    }
+
+    final docId = '${uid}_${route.id}';
+    final docRef = _savedPublicRoutes.doc(docId);
+    final existing = await docRef.get();
+    if (existing.exists) {
+      throw const SavedRouteException('Ya guardaste esta ruta publica.');
+    }
+
+    await docRef.set({
+      'savedByUserId': uid,
+      'sourceRouteId': route.id,
+      'sourceOwnerId': route.ownerId,
+      'sourceOwnerName': creatorName.trim().isEmpty
+          ? 'usuario desconocido'
+          : creatorName.trim(),
+      'title': route.title,
+      'description': route.description,
+      'visibility': StoredRouteVisibility.public.name,
+      'activityProfile': route.activityProfile.label,
+      'routingPreference': route.routingPreference.name,
+      'start': {
+        'label': route.startLabel,
+        'lat': route.startLat,
+        'lon': route.startLon,
+      },
+      'end': {
+        'label': route.endLabel,
+        'lat': route.endLat,
+        'lon': route.endLon,
+      },
+      'polyline': route.polyline,
+      'pointCount': route.pointCount,
+      'totalDistanceMeters': route.totalDistanceMeters,
+      'estimatedDurationSeconds': route.estimatedDurationSeconds,
+      'elevationGainMeters': route.elevationGainMeters,
+      'boundingBox': {
+        'south': route.south,
+        'west': route.west,
+        'north': route.north,
+        'east': route.east,
+      },
+      'preview': {
+        'centerLat': route.previewCenterLat,
+        'centerLon': route.previewCenterLon,
+      },
+      'sourceRouteCreatedAt': route.createdAt == null
+          ? null
+          : Timestamp.fromDate(route.createdAt!),
+      'sourceRouteUpdatedAt': route.updatedAt == null
+          ? null
+          : Timestamp.fromDate(route.updatedAt!),
+      'savedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    return docId;
+  }
+
   /// Elimina una ruta guardada después de validar ownership.
   Future<void> deleteRoute(String routeId) async {
     await _assertOwnership(routeId);
     await _routes.doc(routeId).delete();
+  }
+
+  Future<void> deleteSavedPublicRoute(String savedRouteId) async {
+    final uid = _requireUserId();
+    final snapshot = await _savedPublicRoutes.doc(savedRouteId).get();
+    if (!snapshot.exists) {
+      throw const SavedRouteException('La ruta guardada ya no existe.');
+    }
+
+    final savedByUserId = snapshot.data()?['savedByUserId'] as String?;
+    if (savedByUserId != uid) {
+      throw const SavedRouteException(
+        'No tienes permisos para eliminar esta ruta guardada.',
+      );
+    }
+
+    await _savedPublicRoutes.doc(savedRouteId).delete();
   }
 
   /// Cambia la visibilidad de una ruta sin reescribir el resto del documento.

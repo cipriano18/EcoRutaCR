@@ -1,150 +1,244 @@
-import 'package:ecoruta/models/stored_route.dart';
 import 'package:ecoruta/models/route_profile.dart';
+import 'package:ecoruta/models/stored_route.dart';
 import 'package:flutter/material.dart';
 
-/// Tarjeta visual para listar rutas guardadas con acciones rápidas.
+/// Tarjeta visual para listar rutas guardadas con acciones rapidas.
 class MyRouteCard extends StatelessWidget {
   const MyRouteCard({
     super.key,
     required this.route,
     required this.onOpen,
-    required this.onDelete,
+    this.onDelete,
     this.onEdit,
+    this.creatorText,
+    this.showDeleteAction = false,
   });
 
   static const primaryColor = Color(0xFF012D1D);
-  static const accentGreen = Color(0xFFAEEECB);
+  static const secondaryColor = Color(0xFF2C694E);
+  static const textMuted = Color(0xFF5E6762);
+  static const surfaceTint = Color(0xFFE8F5E9);
+  static const errorColor = Color(0xFFBA1A1A);
+  static const errorContainer = Color(0xFFFFDAD6);
+  static const outlineVariant = Color(0xFFC1C8C2);
 
   final StoredRoute route;
   final VoidCallback onOpen;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
   final VoidCallback? onEdit;
+  final String? creatorText;
+  final bool showDeleteAction;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onOpen,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+    final routeIcon = _iconForProfile(route);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onOpen,
+          borderRadius: BorderRadius.circular(28),
+          child: Ink(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 32,
+                  offset: const Offset(0, 12),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                color: accentGreen,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                _iconForProfile(route),
-                size: 40,
-                color: primaryColor,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 176,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: surfaceTint,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(28),
+                    ),
+                  ),
+                  child: Stack(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      Center(
+                        child: Icon(
+                          routeIcon,
+                          size: 64,
+                          color: primaryColor.withValues(alpha: 0.34),
+                        ),
+                      ),
+                      Positioned(
+                        top: 16,
+                        left: 16,
+                        right: 16,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
-                            Text(
-                              route.title,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                color: primaryColor,
-                              ),
+                            _StatusBadge(
+                              label: route.isPublic ? 'Publica' : 'Privada',
+                              icon: route.isPublic
+                                  ? Icons.public_rounded
+                                  : Icons.lock_rounded,
+                              backgroundColor: route.isPublic
+                                  ? primaryColor.withValues(alpha: 0.92)
+                                  : textMuted.withValues(alpha: 0.92),
+                              foregroundColor: Colors.white,
                             ),
-                            const SizedBox(height: 4),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                _PillLabel(text: route.activityLabel),
-                                _PillLabel(text: route.visibilityLabel),
-                              ],
+                            _StatusBadge(
+                              label: route.activityLabel,
+                              icon: routeIcon,
+                              backgroundColor: secondaryColor.withValues(
+                                alpha: 0.16,
+                              ),
+                              foregroundColor: secondaryColor,
                             ),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.location_on, size: 14),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${route.startLabel} -> ${route.endLabel}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
+                      Text(
+                        route.title,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: primaryColor,
+                          letterSpacing: -0.4,
+                          height: 1.05,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _RouteMetric(
-                        label: 'Distancia',
-                        value: _formatDistance(route.totalDistanceMeters),
+                      const SizedBox(height: 4),
+                      Text(
+                        creatorText ??
+                            (route.sourceOwnerName?.trim().isNotEmpty == true
+                                ? 'Creada por ${route.sourceOwnerName}'
+                                : 'Creada por ti'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: secondaryColor,
+                        ),
                       ),
-                      _RouteMetric(
-                        label: 'Elevacion',
-                        value: '+${route.elevationGainMeters.round()} m',
-                      ),
-                      _RouteMetric(
-                        label: 'Tiempo',
-                        value: _formatDuration(route.estimatedDurationSeconds),
-                      ),
-                    ],
-                  ),
-                  if (!route.isPublic) ...[
-                    const SizedBox(height: 14),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (onEdit != null)
-                          _ActionChipButton(
-                            label: 'Editar',
-                            icon: Icons.edit_outlined,
-                            onTap: onEdit!,
+                      if (route.description.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Text(
+                          route.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: textMuted,
+                            height: 1.35,
                           ),
-                        _ActionChipButton(
-                          label: 'Eliminar',
-                          icon: Icons.delete_outline_rounded,
-                          onTap: onDelete,
-                          isDestructive: true,
                         ),
                       ],
-                    ),
-                  ],
-                ],
-              ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          border: Border.symmetric(
+                            horizontal: BorderSide(
+                              color: outlineVariant.withValues(alpha: 0.35),
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _RouteMetric(
+                                label: 'Distancia',
+                                value: _formatDistance(
+                                  route.totalDistanceMeters,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: _RouteMetric(
+                                label: 'Elevacion',
+                                value:
+                                    '+${route.elevationGainMeters.round()} m',
+                              ),
+                            ),
+                            Expanded(
+                              child: _RouteMetric(
+                                label: 'Tiempo',
+                                value: _formatDuration(
+                                  route.estimatedDurationSeconds,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 16,
+                            color: textMuted,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${route.startLabel} -> ${route.endLabel}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (onEdit != null ||
+                          (showDeleteAction && onDelete != null)) ...[
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            if (onEdit != null)
+                              Expanded(
+                                child: _ActionButton(
+                                  label: 'Editar',
+                                  icon: Icons.edit_rounded,
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
+                                  onTap: onEdit!,
+                                ),
+                              ),
+                            if (onEdit != null) const SizedBox(width: 12),
+                            if (showDeleteAction && onDelete != null)
+                              _ActionButton(
+                                icon: Icons.delete_rounded,
+                                backgroundColor: errorContainer,
+                                foregroundColor: errorColor,
+                                onTap: onDelete!,
+                                compact: true,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -153,11 +247,11 @@ class MyRouteCard extends StatelessWidget {
   IconData _iconForProfile(StoredRoute route) {
     switch (route.activityProfile) {
       case RouteProfile.cycling:
-        return Icons.directions_bike;
+        return Icons.directions_bike_rounded;
       case RouteProfile.hiking:
-        return Icons.hiking;
+        return Icons.hiking_rounded;
       case RouteProfile.running:
-        return Icons.directions_run;
+        return Icons.directions_run_rounded;
     }
   }
 
@@ -178,33 +272,47 @@ class MyRouteCard extends StatelessWidget {
   }
 }
 
-/// Etiqueta compacta para actividad o visibilidad de la ruta.
-class _PillLabel extends StatelessWidget {
-  const _PillLabel({required this.text});
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.label,
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
 
-  final String text;
+  final String label;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F5),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: MyRouteCard.primaryColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: foregroundColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.7,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Muestra una métrica resumida dentro de la tarjeta de ruta.
 class _RouteMetric extends StatelessWidget {
   const _RouteMetric({required this.label, required this.value});
 
@@ -214,20 +322,24 @@ class _RouteMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label.toUpperCase(),
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: Colors.black45,
+            fontWeight: FontWeight.w800,
+            color: MyRouteCard.textMuted,
+            letterSpacing: 0.8,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
           value,
+          textAlign: TextAlign.center,
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
             color: MyRouteCard.primaryColor,
           ),
         ),
@@ -236,54 +348,56 @@ class _RouteMetric extends StatelessWidget {
   }
 }
 
-class _ActionChipButton extends StatelessWidget {
-  const _ActionChipButton({
-    required this.label,
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
     required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
     required this.onTap,
-    this.isDestructive = false,
+    this.label,
+    this.compact = false,
   });
 
-  final String label;
   final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
   final VoidCallback onTap;
-  final bool isDestructive;
+  final String? label;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final foregroundColor = isDestructive
-        ? const Color(0xFF9D1B1E)
-        : MyRouteCard.primaryColor;
-    final backgroundColor = isDestructive
-        ? const Color(0xFFFFECEC)
-        : const Color(0xFFF3F4F5);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: foregroundColor.withValues(alpha: 0.12)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: foregroundColor),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: foregroundColor,
-                ),
-              ),
-            ],
+    return SizedBox(
+      height: 46,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
+            padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+              children: [
+                Icon(icon, size: 20, color: foregroundColor),
+                if (label != null) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    label!,
+                    style: TextStyle(
+                      color: foregroundColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),

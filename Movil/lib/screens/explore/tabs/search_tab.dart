@@ -5,7 +5,9 @@ import 'package:ecoruta/models/stored_route.dart';
 import 'package:ecoruta/screens/explore/route_preview_screen.dart';
 import 'package:ecoruta/screens/picker_map.dart';
 import 'package:ecoruta/services/saved_routes_service.dart';
+import 'package:ecoruta/services/routing/route_result.dart';
 import 'package:ecoruta/widgets/activity_type_card.dart';
+import 'package:ecoruta/widgets/confirm_dialog.dart';
 import 'package:ecoruta/widgets/points_preview.dart';
 import 'package:ecoruta/widgets/route_result_card.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +35,10 @@ class _SearchTabState extends State<SearchTab> {
   String _destinationLabel = 'Pendiente de seleccionar';
   bool _isLoadingCurrentLocation = true;
   bool _isSearchingRoutes = false;
+  bool _isMockSavingPublicRoute = false;
   bool _hasSearchedRoutes = false;
   String? _searchErrorMessage;
-  List<StoredRoute> _publicRoutes = const [];
+  List<_PublicRouteCardData> _publicRoutes = const [];
 
   int _selectedActivity = 0;
   double _radius = 25;
@@ -116,38 +119,56 @@ class _SearchTabState extends State<SearchTab> {
 
     try {
       final publicRoutes = await _savedRoutesService.fetchPublicRoutes();
-      final filtered =
-          publicRoutes
-              .where((route) {
-                if (route.activityProfile != _selectedProfile) {
-                  return false;
-                }
+      final creatorNames = await _savedRoutesService.fetchUserDisplayNames(
+        publicRoutes.map((route) => route.ownerId),
+      );
+      final filteredRoutes = publicRoutes
+          .where((route) {
+            if (route.ownerId == _savedRoutesService.currentUserId) {
+              return false;
+            }
 
-                final distanceMeters = Geolocator.distanceBetween(
-                  _destinationPoint!.latitude,
-                  _destinationPoint!.longitude,
-                  route.endLat,
-                  route.endLon,
-                );
+            if (route.activityProfile != _selectedProfile) {
+              return false;
+            }
 
-                return distanceMeters <= _radius * 1000;
-              })
-              .toList(growable: false)
-            ..sort((a, b) {
-              final distanceToA = Geolocator.distanceBetween(
-                _destinationPoint!.latitude,
-                _destinationPoint!.longitude,
-                a.endLat,
-                a.endLon,
-              );
-              final distanceToB = Geolocator.distanceBetween(
-                _destinationPoint!.latitude,
-                _destinationPoint!.longitude,
-                b.endLat,
-                b.endLon,
-              );
-              return distanceToA.compareTo(distanceToB);
-            });
+            final distanceMeters = Geolocator.distanceBetween(
+              _destinationPoint!.latitude,
+              _destinationPoint!.longitude,
+              route.endLat,
+              route.endLon,
+            );
+
+            return distanceMeters <= _radius * 1000;
+          })
+          .toList(growable: true);
+      filteredRoutes.sort((a, b) {
+        final distanceToA = Geolocator.distanceBetween(
+          _destinationPoint!.latitude,
+          _destinationPoint!.longitude,
+          a.endLat,
+          a.endLon,
+        );
+        final distanceToB = Geolocator.distanceBetween(
+          _destinationPoint!.latitude,
+          _destinationPoint!.longitude,
+          b.endLat,
+          b.endLon,
+        );
+        return distanceToA.compareTo(distanceToB);
+      });
+      final filtered = filteredRoutes
+          .map(
+            (route) => _PublicRouteCardData(
+              route: route,
+              routeResult: route.toRouteResult(),
+              creatorName:
+                  creatorNames[route.ownerId]?.trim().isNotEmpty == true
+                  ? creatorNames[route.ownerId]!
+                  : 'usuario desconocido',
+            ),
+          )
+          .toList(growable: false);
 
       if (!mounted) return;
       setState(() {
@@ -372,28 +393,34 @@ class _SearchTabState extends State<SearchTab> {
           )
         else
           ..._publicRoutes.map(
-            (route) => Padding(
+            (routeData) => Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: RouteResultCard(
-                title: route.title,
-                distance: route.toRouteResult().formattedDistance,
-                duration: route.toRouteResult().formattedDuration,
-                elevationGain: route.toRouteResult().formattedElevationGain,
-                accentColor: _accentForProfile(route.activityProfile),
-                icon: _iconForProfile(route.activityProfile),
+                title: routeData.route.title,
+                supportingText: 'Creada por ${routeData.creatorName}',
+                distance: routeData.routeResult.formattedDistance,
+                duration: routeData.routeResult.formattedDuration,
+                elevationGain: routeData.routeResult.formattedElevationGain,
+                accentColor: _accentForProfile(routeData.route.activityProfile),
+                icon: _iconForProfile(routeData.route.activityProfile),
                 badge: 'PUBLICA',
                 isHighlighted: true,
                 buttonText: 'Ver trazado',
+                secondaryButtonText: 'Guardar',
+                isSecondaryLoading: _isMockSavingPublicRoute,
+                onSecondaryPressed: _isMockSavingPublicRoute
+                    ? null
+                    : () => _confirmSavePublicRoute(routeData),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => RoutePreviewScreen(
-                        title: route.title,
-                        route: route.toRouteResult(),
-                        profile: route.activityProfile,
-                        preference: route.routingPreference,
-                        startLabel: route.startLabel,
-                        endLabel: route.endLabel,
+                        title: routeData.route.title,
+                        route: routeData.routeResult,
+                        profile: routeData.route.activityProfile,
+                        preference: routeData.route.routingPreference,
+                        startLabel: routeData.route.startLabel,
+                        endLabel: routeData.route.endLabel,
                         allowSave: false,
                       ),
                     ),
@@ -429,6 +456,38 @@ class _SearchTabState extends State<SearchTab> {
       return 'La consulta de rutas publicas no pudo completarse';
     }
     return 'Se encontraron ${_publicRoutes.length} rutas publicas de ${_selectedProfileLabel.toLowerCase()} dentro de ${_radius.toInt()} km';
+  }
+
+  Future<void> _confirmSavePublicRoute(_PublicRouteCardData routeData) async {
+    final confirmed = await ConfirmDialog.mostrar(
+      context,
+      titulo: 'Guardar ruta publica',
+      mensaje: 'Deseas guardar esta ruta creada por ${routeData.creatorName}?',
+      textoConfirmar: 'Guardar',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    setState(() => _isMockSavingPublicRoute = true);
+    try {
+      await _savedRoutesService.savePublicRouteReference(
+        route: routeData.route,
+        creatorName: routeData.creatorName,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ruta guardada en la pestaña Guardadas.')),
+      );
+    } on SavedRouteException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isMockSavingPublicRoute = false);
+      }
+    }
   }
 
   String get _selectedProfileLabel {
@@ -486,14 +545,28 @@ class _SearchTabState extends State<SearchTab> {
 
   LatLngBounds _boundsForRadius(LatLng center, double radiusKm) {
     final latDelta = radiusKm / 111.0;
-    final lonDelta = radiusKm /
-        (111.0 * math.max(math.cos(center.latitude * math.pi / 180).abs(), 0.2));
+    final lonDelta =
+        radiusKm /
+        (111.0 *
+            math.max(math.cos(center.latitude * math.pi / 180).abs(), 0.2));
 
     return LatLngBounds(
       LatLng(center.latitude - latDelta, center.longitude - lonDelta),
       LatLng(center.latitude + latDelta, center.longitude + lonDelta),
     );
   }
+}
+
+class _PublicRouteCardData {
+  const _PublicRouteCardData({
+    required this.route,
+    required this.routeResult,
+    required this.creatorName,
+  });
+
+  final StoredRoute route;
+  final RouteResult routeResult;
+  final String creatorName;
 }
 
 class _SectionLabel extends StatelessWidget {

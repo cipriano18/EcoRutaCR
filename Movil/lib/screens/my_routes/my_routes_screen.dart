@@ -20,6 +20,10 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
   static const primaryColor = Color(0xFF012D1D);
   static const surfaceColor = Color(0xFFF8F9FA);
   static const surfaceLow = Color(0xFFF3F4F5);
+  static const surfaceLowest = Colors.white;
+  static const textMuted = Color(0xFF5E6762);
+  static const borderColor = Color(0xFFC1C8C2);
+
   static const _allFilter = 'Todas';
   static const List<String> _filters = [
     _allFilter,
@@ -27,22 +31,24 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
     'Ciclismo',
     'Running',
   ];
+
   static const _allPreferenceFilter = 'Todas';
   static const List<String> _preferenceFilters = [
     _allPreferenceFilter,
-    'Más cortas',
-    'Más rapidas',
-    'Más desafiantes',
+    'Mas cortas',
+    'Mas desafiantes',
   ];
+
   static const _allVisibilityFilter = 'Todas';
   static const List<String> _visibilityFilters = [
     _allVisibilityFilter,
-    'Publicas',
+    'Públicas',
     'Privadas',
   ];
 
   final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
+  _MyRoutesTab _selectedTab = _MyRoutesTab.creations;
   String _selectedFilter = _allFilter;
   String _selectedPreferenceFilter = _allPreferenceFilter;
   String _selectedVisibilityFilter = _allVisibilityFilter;
@@ -79,7 +85,17 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
     return filteredRoutes;
   }
 
-  /// Elimina una ruta tras confirmar la intención del usuario.
+  List<StoredRoute> _sortCreatedRoutes(List<StoredRoute> routes) {
+    final privateRoutes = routes
+        .where((route) => !route.isPublic)
+        .toList(growable: false);
+    final publicRoutes = routes
+        .where((route) => route.isPublic)
+        .toList(growable: false);
+    return [...privateRoutes, ...publicRoutes];
+  }
+
+  /// Elimina una ruta tras confirmar la intencion del usuario.
   Future<void> _removeRoute(StoredRoute route) async {
     final confirmed = await ConfirmDialog.mostrar(
       context,
@@ -92,6 +108,26 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
 
     try {
       await _savedRoutesService.deleteRoute(route.id);
+    } on SavedRouteException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _removeSavedPublicRoute(StoredRoute route) async {
+    final confirmed = await ConfirmDialog.mostrar(
+      context,
+      titulo: 'Quitar ruta guardada',
+      mensaje: 'Quieres quitar "${route.title}" de tus rutas guardadas?',
+      textoConfirmar: 'Quitar',
+    );
+
+    if (!confirmed || !mounted) return;
+
+    try {
+      await _savedRoutesService.deleteSavedPublicRoute(route.id);
     } on SavedRouteException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -174,7 +210,9 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
       appBar: const AppHeader(backgroundColor: surfaceColor),
       body: SafeArea(
         child: StreamBuilder<List<StoredRoute>>(
-          stream: _savedRoutesService.watchUserRoutes(),
+          stream: _selectedTab == _MyRoutesTab.saved
+              ? _savedRoutesService.watchSavedPublicRoutes()
+              : _savedRoutesService.watchUserRoutes(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return _buildErrorState();
@@ -187,7 +225,9 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
             }
 
             final routes = snapshot.data ?? const <StoredRoute>[];
-            final visibleRoutes = _filterRoutes(routes);
+            final visibleRoutes = _selectedTab == _MyRoutesTab.saved
+                ? _filterRoutes(routes)
+                : _sortCreatedRoutes(_filterRoutes(routes));
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
@@ -197,14 +237,26 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
                 _buildFilters(),
                 const SizedBox(height: 20),
                 if (visibleRoutes.isEmpty)
-                  _buildEmptyState()
+                  _selectedTab == _MyRoutesTab.saved
+                      ? _buildSavedRoutesEmptyState()
+                      : _buildEmptyState()
                 else
                   ...visibleRoutes.map(
                     (route) => MyRouteCard(
                       route: route,
                       onOpen: () => _openRoute(route),
-                      onDelete: () => _removeRoute(route),
-                      onEdit: route.isPublic ? null : () => _editRoute(route),
+                      onDelete: _selectedTab == _MyRoutesTab.saved
+                          ? () => _removeSavedPublicRoute(route)
+                          : () => _removeRoute(route),
+                      onEdit:
+                          _selectedTab == _MyRoutesTab.saved || route.isPublic
+                          ? null
+                          : () => _editRoute(route),
+                      creatorText: _selectedTab == _MyRoutesTab.saved
+                          ? 'Creada por ${route.sourceOwnerName?.trim().isNotEmpty == true ? route.sourceOwnerName : 'usuario desconocido'}'
+                          : 'Creada por ti',
+                      showDeleteAction:
+                          _selectedTab == _MyRoutesTab.saved || !route.isPublic,
                     ),
                   ),
               ],
@@ -220,123 +272,366 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'MI BIBLIOTECA',
+          'Mis rutas',
           style: TextStyle(
-            fontSize: 12,
-            letterSpacing: 2,
-            fontWeight: FontWeight.w800,
-            color: Colors.orange,
+            fontSize: 34,
+            fontWeight: FontWeight.w900,
+            color: primaryColor,
+            letterSpacing: -0.9,
+            height: 1,
           ),
         ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Mis rutas',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: primaryColor,
-              ),
-            ),
-            Text(
-              '$savedRoutesCount Guardadas',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: primaryColor,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Revive tus rutas guardadas y decide si compartirlas o mantenerlas privadas.',
-          style: TextStyle(color: Colors.black54),
+        const SizedBox(height: 8),
+        Text(
+          '$savedRoutesCount rutas totales en tu biblioteca',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: textMuted,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildFilters() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Filtrar rutas',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: primaryColor,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: surfaceLow,
+            borderRadius: BorderRadius.circular(22),
           ),
-          const SizedBox(height: 16),
-          _buildFilterSection(
-            title: 'Actividad',
-            chips: _filters
-                .map(
-                  (filter) =>
-                      _filterChip(filter, selected: _selectedFilter == filter),
-                )
-                .toList(growable: false),
-          ),
-          const SizedBox(height: 16),
-          _buildFilterSection(
-            title: 'Tipo de ruta',
-            chips: _preferenceFilters
-                .map(
-                  (filter) => _preferenceFilterChip(
-                    filter,
-                    selected: _selectedPreferenceFilter == filter,
-                  ),
-                )
-                .toList(growable: false),
-          ),
-          const SizedBox(height: 16),
-          _buildFilterSection(
-            title: 'Visibilidad',
-            chips: _visibilityFilters
-                .map(
-                  (filter) => _visibilityFilterChip(
-                    filter,
-                    selected: _selectedVisibilityFilter == filter,
-                  ),
-                )
-                .toList(growable: false),
-          ),
-          const SizedBox(height: 6),
-          const Align(
-            alignment: Alignment.centerRight,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Desliza para ver mas',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey,
-                  ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _buildMainTabButton(
+                  label: 'Mis creaciones',
+                  selected: _selectedTab == _MyRoutesTab.creations,
+                  onTap: () {
+                    setState(() {
+                      _selectedTab = _MyRoutesTab.creations;
+                    });
+                  },
                 ),
-                SizedBox(width: 6),
-                Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.grey),
-              ],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildMainTabButton(
+                  label: 'Guardadas',
+                  selected: _selectedTab == _MyRoutesTab.saved,
+                  onTap: () {
+                    setState(() {
+                      _selectedTab = _MyRoutesTab.saved;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _buildHorizontalChips([
+                _quickFilterChip(
+                  label: 'Todas',
+                  selected: _isQuickAllSelected,
+                  onTap: () {
+                    setState(_resetAllFilters);
+                  },
+                ),
+                _quickFilterChip(
+                  label: 'Privadas',
+                  selected: _selectedVisibilityFilter == 'Privadas',
+                  onTap: () {
+                    setState(() {
+                      _selectedVisibilityFilter = 'Privadas';
+                    });
+                  },
+                ),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            _buildMoreFiltersButton(),
+          ],
+        ),
+        if (_activeExtraFilters.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Text(
+            'Filtros activos: ${_activeExtraFilters.join(' | ')}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: textMuted,
             ),
           ),
         ],
+      ],
+    );
+  }
+
+  bool get _isQuickAllSelected =>
+      _selectedFilter == _allFilter &&
+      _selectedPreferenceFilter == _allPreferenceFilter &&
+      _selectedVisibilityFilter == _allVisibilityFilter;
+
+  List<String> get _activeExtraFilters {
+    final filters = <String>[];
+
+    if (_selectedFilter != _allFilter) {
+      filters.add(_selectedFilter);
+    }
+    if (_selectedPreferenceFilter != _allPreferenceFilter) {
+      filters.add(_selectedPreferenceFilter);
+    }
+    if (_selectedVisibilityFilter != _allVisibilityFilter &&
+        _selectedVisibilityFilter != 'Privadas') {
+      filters.add(_selectedVisibilityFilter);
+    }
+
+    return filters;
+  }
+
+  void _resetAllFilters() {
+    _selectedFilter = _allFilter;
+    _selectedPreferenceFilter = _allPreferenceFilter;
+    _selectedVisibilityFilter = _allVisibilityFilter;
+  }
+
+  Widget _buildMainTabButton({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: selected ? surfaceLowest : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: 0.06),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: selected ? primaryColor : textMuted,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildFilterSection({
+  Widget _buildHorizontalChips(List<Widget> chips) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: chips),
+    );
+  }
+
+  Widget _buildMoreFiltersButton() {
+    final hasExtraFilters = _activeExtraFilters.isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openMoreFiltersSheet,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: hasExtraFilters ? const Color(0xFFDAEBDD) : surfaceLowest,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: hasExtraFilters
+                  ? const Color(0xFFB6D3BC)
+                  : borderColor.withValues(alpha: 0.65),
+            ),
+          ),
+          child: Icon(
+            Icons.tune_rounded,
+            color: hasExtraFilters ? primaryColor : textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openMoreFiltersSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            void updateModalAndParent(VoidCallback update) {
+              setState(update);
+              setModalState(() {});
+            }
+
+            return Container(
+              decoration: const BoxDecoration(
+                color: surfaceLowest,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: borderColor,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Mas filtros',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: primaryColor,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              updateModalAndParent(_resetAllFilters);
+                            },
+                            child: const Text('Limpiar'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Ajusta actividad, tipo de ruta o visibilidad.',
+                        style: TextStyle(
+                          color: textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildSheetFilterSection(
+                        title: 'Actividad',
+                        chips: [
+                          _buildSheetChip(
+                            label: _allFilter,
+                            selected: _selectedFilter == _allFilter,
+                            icon: _iconForActivityFilter(_allFilter),
+                            onTap: () {
+                              updateModalAndParent(() {
+                                _selectedFilter = _allFilter;
+                              });
+                            },
+                          ),
+                          ..._filters
+                              .where((filter) => filter != _allFilter)
+                              .map(
+                                (filter) => _buildSheetChip(
+                                  label: filter,
+                                  selected: _selectedFilter == filter,
+                                  icon: _iconForActivityFilter(filter),
+                                  onTap: () {
+                                    updateModalAndParent(() {
+                                      _selectedFilter = filter;
+                                    });
+                                  },
+                                ),
+                              ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      _buildSheetFilterSection(
+                        title: 'Tipo de ruta',
+                        chips: _preferenceFilters
+                            .map(
+                              (filter) => _buildSheetChip(
+                                label: filter,
+                                selected: _selectedPreferenceFilter == filter,
+                                icon: _iconForPreferenceFilter(filter),
+                                onTap: () {
+                                  updateModalAndParent(() {
+                                    _selectedPreferenceFilter = filter;
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                      const SizedBox(height: 18),
+                      _buildSheetFilterSection(
+                        title: 'Visibilidad',
+                        chips: _visibilityFilters
+                            .map(
+                              (filter) => _buildSheetChip(
+                                label: filter,
+                                selected: _selectedVisibilityFilter == filter,
+                                icon: _iconForVisibilityFilter(filter),
+                                onTap: () {
+                                  updateModalAndParent(() {
+                                    _selectedVisibilityFilter = filter;
+                                  });
+                                },
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Aplicar filtros'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSheetFilterSection({
     required String title,
     required List<Widget> chips,
   }) {
@@ -346,110 +641,89 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
             color: primaryColor,
           ),
         ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(children: chips),
-        ),
+        const SizedBox(height: 12),
+        Wrap(spacing: 10, runSpacing: 10, children: chips),
       ],
     );
   }
 
-  Widget _filterChip(String text, {bool selected = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedFilter = text;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? primaryColor : surfaceLow,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+  Widget _quickFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return _FilterChip(
+      label: label,
+      selected: selected,
+      icon: label == 'Privadas' ? Icons.lock_rounded : Icons.explore_rounded,
+      onTap: onTap,
     );
   }
 
-  Widget _preferenceFilterChip(String text, {bool selected = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedPreferenceFilter = text;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? primaryColor : surfaceLow,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
+  Widget _buildSheetChip({
+    required String label,
+    required bool selected,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return _FilterChip(
+      label: label,
+      selected: selected,
+      icon: icon,
+      onTap: onTap,
+      usePadding: false,
     );
   }
 
-  Widget _visibilityFilterChip(String text, {bool selected = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedVisibilityFilter = text;
-          });
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? primaryColor : surfaceLow,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
+  IconData _iconForActivityFilter(String text) {
+    switch (text) {
+      case 'Senderismo':
+        return Icons.hiking_rounded;
+      case 'Ciclismo':
+        return Icons.directions_bike_rounded;
+      case 'Running':
+        return Icons.directions_run_rounded;
+      case _allFilter:
+      default:
+        return Icons.explore_rounded;
+    }
+  }
+
+  IconData _iconForPreferenceFilter(String text) {
+    switch (text) {
+      case 'Mas cortas':
+        return Icons.straight_rounded;
+      case 'Mas desafiantes':
+        return Icons.landscape_rounded;
+      case _allPreferenceFilter:
+      default:
+        return Icons.tune_rounded;
+    }
+  }
+
+  IconData _iconForVisibilityFilter(String text) {
+    switch (text) {
+      case 'Publicas':
+        return Icons.public_rounded;
+      case 'Privadas':
+        return Icons.lock_rounded;
+      case _allVisibilityFilter:
+      default:
+        return Icons.visibility_rounded;
+    }
   }
 
   String _labelForRoutingPreference(RoutingPreference preference) {
     switch (preference) {
       case RoutingPreference.shortest:
-        return 'Más cortas';
+        return 'Mas cortas';
       case RoutingPreference.mostChallenging:
-        return 'Más desafiantes';
+        return 'Mas desafiantes';
     }
   }
 
@@ -462,31 +736,76 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildSavedRoutesEmptyState() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        color: surfaceLowest,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: const Column(
         children: [
-          Icon(Icons.map_outlined, size: 44, color: Color(0xFF012D1D)),
-          SizedBox(height: 12),
+          Icon(Icons.bookmark_outline_rounded, size: 44, color: primaryColor),
+          SizedBox(height: 14),
           Text(
-            'No hay rutas para este filtro',
+            'Guardadas por ti',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
               color: primaryColor,
             ),
           ),
           SizedBox(height: 8),
           Text(
-            'Guarda una ruta desde Explorar para verla aqui.',
+            'Todavia no has guardado rutas publicas de otros usuarios desde Explorar.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.black54, height: 1.4),
+            style: TextStyle(color: textMuted, height: 1.45),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: surfaceLowest,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.map_outlined, size: 44, color: primaryColor),
+          SizedBox(height: 14),
+          Text(
+            'No hay rutas para este filtro',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: primaryColor,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Ajusta los filtros o guarda una ruta desde Explorar para verla aqui.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textMuted, height: 1.45),
           ),
         ],
       ),
@@ -500,8 +819,8 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
+            color: surfaceLowest,
+            borderRadius: BorderRadius.circular(28),
           ),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
@@ -518,5 +837,70 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
         ),
       ),
     );
+  }
+}
+
+enum _MyRoutesTab { creations, saved }
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.icon,
+    required this.onTap,
+    this.usePadding = true,
+  });
+
+  final String label;
+  final bool selected;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool usePadding;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected
+        ? _MyRoutesScreenState.primaryColor
+        : _MyRoutesScreenState.textMuted;
+
+    final chip = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          decoration: BoxDecoration(
+            color: selected
+                ? const Color(0xFFDAEBDD)
+                : _MyRoutesScreenState.surfaceLow,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? const Color(0xFFB6D3BC)
+                  : _MyRoutesScreenState.borderColor.withValues(alpha: 0.65),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 18, color: foreground),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (!usePadding) return chip;
+
+    return Padding(padding: const EdgeInsets.only(right: 10), child: chip);
   }
 }

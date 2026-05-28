@@ -35,6 +35,13 @@ class StoredRoute {
     required this.east,
     required this.previewCenterLat,
     required this.previewCenterLon,
+    this.sourceRouteId,
+    this.savedByUserId,
+    this.sourceOwnerId,
+    this.sourceOwnerName,
+    this.savedAt,
+    this.sourceRouteCreatedAt,
+    this.sourceRouteUpdatedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -103,6 +110,27 @@ class StoredRoute {
   final double previewCenterLat;
   final double previewCenterLon;
 
+  /// Identificador de la ruta publica original cuando esta fue guardada.
+  final String? sourceRouteId;
+
+  /// Usuario que guardo la ruta publica como referencia personal.
+  final String? savedByUserId;
+
+  /// Propietario original de la ruta publica guardada.
+  final String? sourceOwnerId;
+
+  /// Nombre visible del autor original al momento de guardar.
+  final String? sourceOwnerName;
+
+  /// Fecha en la que el usuario guardo esta ruta publica.
+  final DateTime? savedAt;
+
+  /// Fecha original de creacion de la ruta fuente.
+  final DateTime? sourceRouteCreatedAt;
+
+  /// Fecha original de actualizacion de la ruta fuente.
+  final DateTime? sourceRouteUpdatedAt;
+
   /// Fecha de creación del documento.
   final DateTime? createdAt;
 
@@ -123,6 +151,9 @@ class StoredRoute {
 
   /// Indica si la ruta está visible para otros usuarios.
   bool get isPublic => visibility == StoredRouteVisibility.public;
+
+  /// Indica si este documento representa una referencia guardada de una ruta publica.
+  bool get isSavedPublicRoute => sourceRouteId?.isNotEmpty == true;
 
   /// Etiqueta legible del estado de visibilidad.
   String get visibilityLabel => isPublic ? 'Publica' : 'Privada';
@@ -175,6 +206,17 @@ class StoredRoute {
         'east': east,
       },
       'preview': {'centerLat': previewCenterLat, 'centerLon': previewCenterLon},
+      if (sourceRouteId != null) 'sourceRouteId': sourceRouteId,
+      if (savedByUserId != null) 'savedByUserId': savedByUserId,
+      if (sourceOwnerId != null) 'sourceOwnerId': sourceOwnerId,
+      if (sourceOwnerName != null) 'sourceOwnerName': sourceOwnerName,
+      'savedAt': savedAt == null ? null : Timestamp.fromDate(savedAt!),
+      'sourceRouteCreatedAt': sourceRouteCreatedAt == null
+          ? null
+          : Timestamp.fromDate(sourceRouteCreatedAt!),
+      'sourceRouteUpdatedAt': sourceRouteUpdatedAt == null
+          ? null
+          : Timestamp.fromDate(sourceRouteUpdatedAt!),
       'createdAt': createdAt == null ? null : Timestamp.fromDate(createdAt!),
       'updatedAt': updatedAt == null ? null : Timestamp.fromDate(updatedAt!),
     };
@@ -218,6 +260,13 @@ class StoredRoute {
       east: _toDouble(boundingBox['east']),
       previewCenterLat: _toDouble(preview['centerLat']),
       previewCenterLon: _toDouble(preview['centerLon']),
+      sourceRouteId: (data['sourceRouteId'] as String?)?.trim(),
+      savedByUserId: (data['savedByUserId'] as String?)?.trim(),
+      sourceOwnerId: (data['sourceOwnerId'] as String?)?.trim(),
+      sourceOwnerName: (data['sourceOwnerName'] as String?)?.trim(),
+      savedAt: _timestampToDateTime(data['savedAt']),
+      sourceRouteCreatedAt: _timestampToDateTime(data['sourceRouteCreatedAt']),
+      sourceRouteUpdatedAt: _timestampToDateTime(data['sourceRouteUpdatedAt']),
       createdAt: _timestampToDateTime(data['createdAt']),
       updatedAt: _timestampToDateTime(data['updatedAt']),
     );

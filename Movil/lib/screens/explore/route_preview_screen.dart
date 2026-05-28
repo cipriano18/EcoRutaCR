@@ -50,6 +50,7 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
     final points = widget.route.path
         .map((node) => LatLng(node.latitude, node.longitude))
         .toList(growable: false);
+    final hasRouteGeometry = points.isNotEmpty;
     final bounds = _boundsForRoute(widget.route.path);
     final startPoint = points.isNotEmpty ? points.first : null;
     final endPoint = points.length > 1 ? points.last : startPoint;
@@ -95,10 +96,12 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
                   options: MapOptions(
                     initialCenter: _centerForBounds(bounds),
                     initialZoom: 14,
-                    initialCameraFit: CameraFit.bounds(
-                      bounds: bounds,
-                      padding: const EdgeInsets.all(48),
-                    ),
+                    initialCameraFit: hasRouteGeometry
+                        ? CameraFit.bounds(
+                            bounds: bounds,
+                            padding: const EdgeInsets.all(48),
+                          )
+                        : null,
                   ),
                   children: [
                     TileLayer(
@@ -106,15 +109,16 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.lab2_moviles',
                     ),
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: points,
-                          strokeWidth: 5,
-                          color: _primaryColor,
-                        ),
-                      ],
-                    ),
+                    if (hasRouteGeometry)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: points,
+                            strokeWidth: 5,
+                            color: _primaryColor,
+                          ),
+                        ],
+                      ),
                     MarkerLayer(
                       markers: [
                         if (startPoint != null)
@@ -125,7 +129,9 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
                             child: _RoutePointMarker(
                               icon: Icons.play_arrow_rounded,
                               color: _primaryColor,
-                              label: widget.enableStartAction ? 'Iniciar' : null,
+                              label: widget.enableStartAction
+                                  ? 'Iniciar'
+                                  : null,
                               onTap: widget.enableStartAction
                                   ? _confirmStartRoute
                                   : null,
@@ -150,36 +156,60 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
           ),
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!hasRouteGeometry)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF1EC),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'No se pudo reconstruir el trazado completo de esta ruta en este dispositivo.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF721D00),
+                        height: 1.35,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _MetricTile(
-                    label: 'Distancia',
-                    value: widget.route.formattedDistance,
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  _MetricTile(
-                    label: 'Tiempo',
-                    value: widget.route.formattedDuration,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _MetricTile(
+                        label: 'Distancia',
+                        value: widget.route.formattedDistance,
+                      ),
+                      _MetricTile(
+                        label: 'Tiempo',
+                        value: widget.route.formattedDuration,
+                      ),
+                      _MetricTile(
+                        label: 'Desnivel',
+                        value: widget.route.formattedElevationGain,
+                      ),
+                    ],
                   ),
-                  _MetricTile(
-                    label: 'Desnivel',
-                    value: widget.route.formattedElevationGain,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -345,7 +375,10 @@ class _RoutePointMarker extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.94),
                   borderRadius: BorderRadius.circular(999),
@@ -370,10 +403,7 @@ class _RoutePointMarker extends StatelessWidget {
             ],
           );
 
-    return GestureDetector(
-      onTap: onTap,
-      child: content,
-    );
+    return GestureDetector(onTap: onTap, child: content);
   }
 }
 

@@ -51,11 +51,13 @@ class AuthService {
   Future<UserCredential> login({
     required String email,
     required String password,
-  }) {
-    return _auth.signInWithEmailAndPassword(
+  }) async {
+    final credential = await _auth.signInWithEmailAndPassword(
       email: email.trim(),
       password: password.trim(),
     );
+    await _syncPublicProfileFromPrivateDoc(credential.user?.uid);
+    return credential;
   }
 
   /// Registra un usuario nuevo y crea su perfil base en Firestore.
@@ -110,24 +112,6 @@ class AuthService {
       'km_counter': 0,
       'streak_started_at': null,
       'streak_deadline_at': null,
-
-      'weight_kg': null,
-      'height_cm': null,
-      'birth_date': null,
-      'routes_per_week_avg': null,
-      'km_per_week_avg': null,
-      'minutes_per_week_avg': null,
-      'last_route_at': null,
-      'activity_consistency_score': null,
-      'favorite_route_distance_km': null,
-      'favorite_route_duration_min': null,
-      'bmi': null,
-      'bmi_category': null,
-      'activity_level': null,
-      'wellness_status': null,
-      'wellness_score': null,
-      'inference_updated_at': null,
-
       'routes_per_week_avg': null,
       'km_per_week_avg': null,
       'minutes_per_week_avg': null,
@@ -140,6 +124,13 @@ class AuthService {
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    await _syncPublicUserProfile(
+      uid: user.uid,
+      fullName: fullName.trim(),
+      avatarId: avatarId,
+      favoriteActivity: favoriteActivity.trim(),
+      isCreate: true,
+    );
 
     return userCredential;
   }
@@ -161,6 +152,7 @@ class AuthService {
     if (!doc.exists || doc.data() == null) return null;
 
     final data = Map<String, dynamic>.from(doc.data()!);
+    await _syncPublicProfileFromPrivateDoc(user.uid, currentData: data);
     final syncedData = await _resetExpiredStreakIfNeeded(
       uid: user.uid,
       data: data,
@@ -183,75 +175,83 @@ class AuthService {
       'avatarId': avatarId,
       'updatedAt': FieldValue.serverTimestamp(),
     });
-  }
-
-  /// Actualiza los campos editables del perfil.
- Future<void> updateProfile({
-  required String fullName,
-  required String address,
-  required String favoriteActivity,
-  double? weightKg,
-  double? heightCm,
-  DateTime? birthDate,
-}) async {
-  final user = _auth.currentUser;
-
-  if (user == null) {
-    throw FirebaseAuthException(
-      code: 'user-null',
-      message: 'No hay un usuario autenticado',
+    final snapshot = await _firestore.collection('users').doc(user.uid).get();
+    final data = snapshot.data() ?? const <String, dynamic>{};
+    await _syncPublicUserProfile(
+      uid: user.uid,
+      fullName: (data['fullName'] as String? ?? 'Usuario').trim(),
+      avatarId: avatarId,
+      favoriteActivity: (data['favoriteActivity'] as String? ?? '').trim(),
     );
   }
 
-  final userDoc = _firestore.collection('users').doc(user.uid);
+  /// Actualiza los campos editables del perfil.
+  Future<void> updateProfile({
+    required String fullName,
+    required String address,
+    required String favoriteActivity,
+    double? weightKg,
+    double? heightCm,
+    DateTime? birthDate,
+  }) async {
+    final user = _auth.currentUser;
 
-  final snapshot = await userDoc.get();
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-null',
+        message: 'No hay un usuario autenticado',
+      );
+    }
 
-  final currentData = Map<String, dynamic>.from(
-    snapshot.data() ?? {},
-  );
+    final userDoc = _firestore.collection('users').doc(user.uid);
 
-  final nextHealthInput = UserHealthInput.fromUserMap({
-    ...currentData,
-    'weight_kg': weightKg,
-    'height_cm': heightCm,
-    'birth_date': birthDate,
-    'favoriteActivity': favoriteActivity.trim(),
-  });
+    final snapshot = await userDoc.get();
 
-  final healthInference = HealthInferenceEngine.evaluate(
-    nextHealthInput,
-  );
+    final currentData = Map<String, dynamic>.from(snapshot.data() ?? {});
 
-  final patch = <String, dynamic>{
-    'fullName': fullName.trim(),
-    'address': address.trim(),
-    'favoriteActivity': favoriteActivity.trim(),
-
-    'weight_kg': weightKg,
-    'height_cm': heightCm,
-
-    'birth_date':
-        birthDate == null
-            ? null
-            : Timestamp.fromDate(birthDate),
-
-    ...healthInference.toInitialFirestorePatch(),
-
-    'updatedAt': FieldValue.serverTimestamp(),
-  };
-
-  if (healthInference.activityLevel != null &&
-      nextHealthInput.activityConsistencyScore != null) {
-    patch.addAll({
-      'activity_level': healthInference.activityLevel,
-      'wellness_status': healthInference.wellnessStatus,
-      'wellness_score': healthInference.wellnessScore,
+    final nextHealthInput = UserHealthInput.fromUserMap({
+      ...currentData,
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
+      'birth_date': birthDate,
+      'favoriteActivity': favoriteActivity.trim(),
     });
-  }
 
-  await userDoc.update(patch);
-}
+    final healthInference = HealthInferenceEngine.evaluate(nextHealthInput);
+
+    final patch = <String, dynamic>{
+      'fullName': fullName.trim(),
+      'address': address.trim(),
+      'favoriteActivity': favoriteActivity.trim(),
+
+      'weight_kg': weightKg,
+      'height_cm': heightCm,
+
+      'birth_date': birthDate == null ? null : Timestamp.fromDate(birthDate),
+
+      ...healthInference.toInitialFirestorePatch(),
+
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (healthInference.activityLevel != null &&
+        nextHealthInput.activityConsistencyScore != null) {
+      patch.addAll({
+        'activity_level': healthInference.activityLevel,
+        'wellness_status': healthInference.wellnessStatus,
+        'wellness_score': healthInference.wellnessScore,
+      });
+    }
+
+    await userDoc.update(patch);
+    final currentAvatarId = (currentData['avatarId'] as num?)?.toInt() ?? 0;
+    await _syncPublicUserProfile(
+      uid: user.uid,
+      fullName: fullName.trim(),
+      avatarId: currentAvatarId,
+      favoriteActivity: favoriteActivity.trim(),
+    );
+  }
 
   /// Reautentica al usuario antes de cambiar su contraseña.
   Future<void> changePassword({
@@ -308,6 +308,7 @@ class AuthService {
     final backupData = userDocSnapshot.data();
 
     await userDocRef.delete();
+    await _firestore.collection('public_user_profiles').doc(uid).delete();
 
     try {
       await user.delete();
@@ -442,6 +443,52 @@ class AuthService {
   double? _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return null;
+  }
+
+  Future<void> _syncPublicUserProfile({
+    required String uid,
+    required String fullName,
+    required int avatarId,
+    required String favoriteActivity,
+    bool isCreate = false,
+  }) {
+    final payload = <String, dynamic>{
+      'uid': uid,
+      'fullName': fullName,
+      'avatarId': avatarId,
+      'favoriteActivity': favoriteActivity,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (isCreate) {
+      payload['createdAt'] = FieldValue.serverTimestamp();
+    }
+    return _firestore
+        .collection('public_user_profiles')
+        .doc(uid)
+        .set(payload, SetOptions(merge: true));
+  }
+
+  Future<void> _syncPublicProfileFromPrivateDoc(
+    String? uid, {
+    Map<String, dynamic>? currentData,
+  }) async {
+    if (uid == null || uid.isEmpty) return;
+
+    final data =
+        currentData ??
+        (await _firestore.collection('users').doc(uid).get()).data() ??
+        const <String, dynamic>{};
+    if (data.isEmpty) return;
+
+    final fullName = (data['fullName'] as String? ?? '').trim();
+    if (fullName.isEmpty) return;
+
+    await _syncPublicUserProfile(
+      uid: uid,
+      fullName: fullName,
+      avatarId: (data['avatarId'] as num?)?.toInt() ?? 0,
+      favoriteActivity: (data['favoriteActivity'] as String? ?? '').trim(),
+    );
   }
 
   DateTime _activityWindowStart(DateTime referenceTime) {
