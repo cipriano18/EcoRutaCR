@@ -359,7 +359,7 @@ class FirestoreRepository:
     def fetch_users(self) -> dict[str, UserRecord]:
         documents = self._db.collection(
             COLLECTION_USERS
-        ).stream()
+        ).stream(Timeout=15)
 
         users: dict[str, UserRecord] = {}
 
@@ -389,7 +389,7 @@ class FirestoreRepository:
 
         routes: dict[str, RouteRecord] = {}
 
-        for doc in query.stream():
+        for doc in query.stream(timeout=15):
             data = doc.to_dict() or {}
 
             route = RouteRecord.from_firestore(
@@ -407,7 +407,7 @@ class FirestoreRepository:
 
         documents = self._db.collection(
             COLLECTION_SAVED
-        ).stream()
+        ).stream(Timeout=15)
 
         saved_routes: list[SavedRouteRecord] = []
 
