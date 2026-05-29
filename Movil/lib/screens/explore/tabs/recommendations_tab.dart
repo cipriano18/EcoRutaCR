@@ -21,10 +21,10 @@ class RecommendationsTab extends StatefulWidget {
 
 class _RecommendationsTabState extends State<RecommendationsTab> {
   static const _primaryColor = Color(0xFF012D1D);
-  static const _surfaceHigh = Color(0xFFE7E8E9);
   static const _surfaceHighest = Color(0xFFE1E3E4);
   static const _tertiaryFixed = Color(0xFFFFB59F);
   static const _textMuted = Color(0xFF414844);
+  static const _borderSoft = Color(0xFFD8DDDA);
 
   final TextEditingController _searchController = TextEditingController();
   final RecommendationsService _recommendationsService =
@@ -124,8 +124,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         else if (visibleRecommendations.isEmpty)
           const _RecommendationsInfoCard(
             icon: Icons.route_rounded,
-            message:
-                'Todavia no hay recomendaciones disponibles para esta zona o para tu perfil actual.',
+            message: 'No hay recomendaciones para mostrar.',
           )
         else
           ...visibleRecommendations.map(
@@ -157,41 +156,45 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
   }
 
   Widget _buildSearchField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: _surfaceHigh,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (value) => setState(() => _zoneQuery = value),
-        decoration: InputDecoration(
-          hintText: 'Buscar por zona',
-          prefixIcon: const Icon(Icons.location_on_rounded, color: _textMuted),
-          suffixIcon: (_zoneQuery.isNotEmpty || _selectedZoneLabel != null)
-              ? IconButton(
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      _zoneQuery = '';
-                      _selectedZoneLabel = null;
-                    });
-                  },
-                  icon: const Icon(Icons.close_rounded, color: _textMuted),
-                )
-              : null,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(18),
-            borderSide: const BorderSide(color: _primaryColor, width: 1.8),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 18,
-          ),
-          fillColor: _surfaceHighest,
-          filled: true,
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) => setState(() => _zoneQuery = value),
+      decoration: InputDecoration(
+        hintText: 'Buscar por zona',
+        hintStyle: const TextStyle(
+          color: _textMuted,
+          fontWeight: FontWeight.w500,
+        ),
+        prefixIcon: const Icon(Icons.location_on_rounded, color: _textMuted),
+        suffixIcon: (_zoneQuery.isNotEmpty || _selectedZoneLabel != null)
+            ? IconButton(
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _zoneQuery = '';
+                    _selectedZoneLabel = null;
+                  });
+                },
+                icon: const Icon(Icons.close_rounded, color: _textMuted),
+              )
+            : null,
+        filled: true,
+        fillColor: _surfaceHighest,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 22,
+          vertical: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(28),
+          borderSide: const BorderSide(color: Colors.transparent),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(28),
+          borderSide: const BorderSide(color: _borderSoft),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(28),
+          borderSide: const BorderSide(color: _primaryColor, width: 1.8),
         ),
       ),
     );
@@ -281,8 +284,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
     final user = context.read<UserProvider>().user;
     if (user == null) {
       setState(() {
-        _errorMessage =
-            'No se encontro el usuario autenticado para consultar recomendaciones.';
+        _errorMessage = 'No pudimos cargar las recomendaciones.';
         _recommendations = const [];
       });
       return;
@@ -346,27 +348,30 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
       setState(() {
         _recommendations = visible;
         if (response.recommendations.isNotEmpty && visible.isEmpty) {
-          _errorMessage =
-              'El modelo devolvio rutas, pero ninguna pudo renderizarse correctamente en la app.';
+          _errorMessage = 'No pudimos mostrar las recomendaciones.';
         }
       });
     } on RecommendationsException catch (error) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = error.message;
+        debugPrint('Recommendations service failed: ${error.message}');
+        _errorMessage = 'No pudimos cargar las recomendaciones.';
         _recommendations = const [];
       });
     } on SavedRouteException catch (error) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = error.message;
+        debugPrint(
+          'Recommendations saved-route lookup failed: ${error.message}',
+        );
+        _errorMessage = 'No pudimos cargar las recomendaciones.';
         _recommendations = const [];
       });
     } catch (error) {
       debugPrint('RecommendationsTab load failed: $error');
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'No se pudieron cargar las recomendaciones: $error';
+        _errorMessage = 'No pudimos cargar las recomendaciones.';
         _recommendations = const [];
       });
     } finally {

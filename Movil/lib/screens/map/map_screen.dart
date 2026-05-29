@@ -1,20 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
-import 'package:ecoruta/providers/user_provider.dart';
-import 'package:ecoruta/services/auth_service.dart';
+import 'package:ecoruta/navigation/main_shell.dart';
 import 'package:ecoruta/widgets/app_header.dart';
-import 'package:ecoruta/widgets/scr_map/active_route_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:provider/provider.dart';
 
-/// Pantalla de mapa en vivo con seguimiento, brújula y elevación.
+/// Pantalla de mapa en vivo con seguimiento, brujula y elevacion.
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
 
@@ -27,7 +23,6 @@ class _MapScreenState extends State<MapScreen> {
   static const _orangeColor = Color(0xFFFF7043);
   static const _elevationApiUserAgent = 'EcoRutaCR/1.0';
   static const LatLng _fallbackCenter = LatLng(9.9281, -84.0907);
-  static const LatLng _routeDestination = LatLng(10.1982, -84.2304);
 
   final MapController _mapController = MapController();
 
@@ -37,15 +32,11 @@ class _MapScreenState extends State<MapScreen> {
 
   LatLng? _currentPosition;
   bool _loading = true;
-  bool _isRouteActive = false;
-  bool _isRoutePaused = false;
   bool _hasCompassSupport = false;
   bool _isCompassModeEnabled = false;
   double? _currentElevation;
   double _heading = 0;
   double _smoothedHeading = 0;
-  double _sessionDistanceMeters = 0;
-  LatLng? _lastTrackedRoutePoint;
 
   @override
   void initState() {
@@ -62,7 +53,7 @@ class _MapScreenState extends State<MapScreen> {
     super.dispose();
   }
 
-  /// Inicializa permisos, posición y flujos necesarios para el mapa en vivo.
+  /// Inicializa permisos, posicion y flujos necesarios para el mapa en vivo.
   Future<void> _initLocation() async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
@@ -110,23 +101,6 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ).listen((position) {
           final nextPosition = LatLng(position.latitude, position.longitude);
-          if (_isRouteActive && !_isRoutePaused) {
-            final lastTrackedPoint = _lastTrackedRoutePoint;
-            if (lastTrackedPoint != null) {
-              final segmentMeters = Geolocator.distanceBetween(
-                lastTrackedPoint.latitude,
-                lastTrackedPoint.longitude,
-                nextPosition.latitude,
-                nextPosition.longitude,
-              );
-              if (segmentMeters.isFinite &&
-                  segmentMeters > 0 &&
-                  segmentMeters <= 250) {
-                _sessionDistanceMeters += segmentMeters;
-              }
-            }
-            _lastTrackedRoutePoint = nextPosition;
-          }
 
           if (!mounted) return;
           setState(() {
@@ -176,7 +150,7 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  /// Refresca la elevación visible según la posición actual del usuario.
+  /// Refresca la elevacion visible segun la posicion actual del usuario.
   Future<void> _refreshElevation() async {
     final currentPosition = _currentPosition;
     if (currentPosition == null) return;
@@ -186,11 +160,11 @@ class _MapScreenState extends State<MapScreen> {
       if (!mounted) return;
       setState(() => _currentElevation = elevation);
     } catch (_) {
-      // Conserva el último valor válido si falla la red.
+      // Conserva el ultimo valor valido si falla la red.
     }
   }
 
-  /// Consulta elevación remota para el punto actual del usuario.
+  /// Consulta elevacion remota para el punto actual del usuario.
   Future<double> _fetchElevation(LatLng point) async {
     final uri = Uri.https('api.open-meteo.com', '/v1/elevation', {
       'latitude': point.latitude.toString(),
@@ -270,22 +244,8 @@ class _MapScreenState extends State<MapScreen> {
     return (current + (delta * 0.18) + 360) % 360;
   }
 
-  void _startRouteSession() {
-    setState(() {
-      _isRouteActive = true;
-      _isRoutePaused = false;
-      _sessionDistanceMeters = 0;
-      _lastTrackedRoutePoint = _currentPosition;
-    });
-  }
-
-  void _cancelRouteSession() {
-    setState(() {
-      _isRouteActive = false;
-      _isRoutePaused = false;
-      _sessionDistanceMeters = 0;
-      _lastTrackedRoutePoint = null;
-    });
+  void _openExploreTab() {
+    MainShell.navigateToTab(context, 1);
   }
 
   @override
@@ -323,7 +283,7 @@ class _MapScreenState extends State<MapScreen> {
                       width: 40,
                       height: 40,
                       child: Transform.rotate(
-                        angle: _smoothedHeading * math.pi / 180,
+                        angle: _smoothedHeading * 3.1415926535897932 / 180,
                         child: Container(
                           decoration: BoxDecoration(
                             color: _primaryColor,
@@ -331,7 +291,7 @@ class _MapScreenState extends State<MapScreen> {
                             border: Border.all(color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: _primaryColor.withOpacity(0.4),
+                                color: _primaryColor.withValues(alpha: 0.4),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               ),
@@ -345,23 +305,6 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                       ),
                     ),
-                  Marker(
-                    point: _routeDestination,
-                    width: 38,
-                    height: 38,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFB59F),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                      ),
-                      child: const Icon(
-                        Icons.flag_rounded,
-                        color: Color(0xFF721D00),
-                        size: 16,
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ],
@@ -401,93 +344,36 @@ class _MapScreenState extends State<MapScreen> {
               accentColor: _orangeColor,
             ),
           ),
-          if (!_isRouteActive)
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 24,
-              child: SafeArea(
-                child: ElevatedButton.icon(
-                  onPressed: _currentPosition == null
-                      ? null
-                      : _startRouteSession,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 24,
+            child: SafeArea(
+              child: ElevatedButton.icon(
+                onPressed: _openExploreTab,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  icon: const Icon(Icons.play_arrow_rounded),
-                  label: const Text(
-                    'Iniciar ruta',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
+                ),
+                icon: const Icon(Icons.explore_rounded),
+                label: const Text(
+                  'Explorar rutas',
+                  style: TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),
-          if (_isRouteActive)
-            Positioned(
-              left: 10,
-              right: 10,
-              bottom: 10,
-              child: ActiveRouteCard(
-                routeName: 'Volcán Poás Trail',
-                onPause: () {
-                  setState(() {
-                    _isRoutePaused = true;
-                    _lastTrackedRoutePoint = _currentPosition;
-                  });
-                },
-                onResume: () {
-                  setState(() {
-                    _isRoutePaused = false;
-                    _lastTrackedRoutePoint = _currentPosition;
-                  });
-                },
-                onCancel: () {
-                  if (!mounted) return;
-                  _cancelRouteSession();
-                },
-                onFinish: (elapsed) async {
-                  final userProvider = Provider.of<UserProvider>(
-                    context,
-                    listen: false,
-                  );
-                  final distanceKm = _sessionDistanceMeters / 1000;
-                  final durationMinutes = math.max(
-                    elapsed.inSeconds / 60,
-                    1 / 60,
-                  );
-                  try {
-                    final refreshedUser = await AuthService()
-                        .registerWeeklyRouteCompletion(
-                          distanceKm: distanceKm,
-                          durationMinutes: durationMinutes,
-                        );
-                    if (!mounted) return;
-
-                    if (refreshedUser != null) {
-                      userProvider.setUser(refreshedUser);
-                    }
-                  } catch (_) {
-                    // Evita romper la UI si falla la actualizacion remota.
-                  } finally {
-                    if (mounted) {
-                      _cancelRouteSession();
-                    }
-                  }
-                },
-              ),
-            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// Panel compacto que resume la elevación actual.
+/// Panel compacto que resume la elevacion actual.
 class _ElevationCard extends StatelessWidget {
   const _ElevationCard({required this.elevation, required this.accentColor});
 
@@ -501,10 +387,13 @@ class _ElevationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+          ),
         ],
       ),
       child: Column(
@@ -571,19 +460,19 @@ class _ElevationCard extends StatelessWidget {
   }
 }
 
-/// Botón flotante reutilizable para acciones sobre el mapa.
+/// Boton flotante reutilizable para acciones sobre el mapa.
 class _MapButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-  final bool isActive;
-  final bool isDisabled;
-
   const _MapButton({
     required this.icon,
     required this.onTap,
     this.isActive = false,
     this.isDisabled = false,
   });
+
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool isActive;
+  final bool isDisabled;
 
   @override
   Widget build(BuildContext context) {
@@ -597,11 +486,14 @@ class _MapButton extends StatelessWidget {
               ? Colors.grey.shade300
               : isActive
               ? const Color(0xFF012D1D)
-              : Colors.white.withOpacity(0.92),
+              : Colors.white.withValues(alpha: 0.92),
           border: isDisabled ? Border.all(color: Colors.grey.shade400) : null,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 12,
+            ),
           ],
         ),
         child: Icon(
@@ -618,7 +510,7 @@ class _MapButton extends StatelessWidget {
   }
 }
 
-/// Tarjeta que muestra el estado de la brújula y su orientación.
+/// Tarjeta que muestra el estado de la brujula y su orientacion.
 class _CompassCard extends StatelessWidget {
   const _CompassCard({required this.heading});
 
@@ -631,10 +523,13 @@ class _CompassCard extends StatelessWidget {
       height: 90,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+          ),
         ],
       ),
       child: Stack(
@@ -645,7 +540,7 @@ class _CompassCard extends StatelessWidget {
           const Positioned(left: 0, child: _CompassLabel('W')),
           const Positioned(right: 0, child: _CompassLabel('E')),
           Transform.rotate(
-            angle: (-heading) * math.pi / 180,
+            angle: (-heading) * 3.1415926535897932 / 180,
             child: const Icon(
               Icons.navigation_rounded,
               color: Color(0xFF012D1D),

@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, AppRoutes.shell);
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.shell, (_) => false);
     } on FirebaseAuthException catch (e) {
       String mensaje = 'Error al iniciar sesion';
 

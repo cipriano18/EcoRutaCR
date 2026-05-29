@@ -46,7 +46,7 @@ class _ExploreScreenState extends State<ExploreScreen>
         appBar: AppHeader(
           backgroundColor: const Color(0xFFF8F9FA),
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(60),
+            preferredSize: const Size.fromHeight(68),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
               child: Container(
@@ -57,6 +57,8 @@ class _ExploreScreenState extends State<ExploreScreen>
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
                   indicator: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -72,12 +74,13 @@ class _ExploreScreenState extends State<ExploreScreen>
                   dividerColor: Colors.transparent,
                   labelColor: _primaryColor,
                   unselectedLabelColor: Colors.grey,
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
                   labelStyle: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
                   unselectedLabelStyle: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
                   tabs: const [

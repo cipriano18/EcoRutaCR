@@ -1,5 +1,5 @@
-import 'package:ecoruta/providers/user_provider.dart';
 import 'package:ecoruta/navigation/main_shell.dart';
+import 'package:ecoruta/providers/user_provider.dart';
 import 'package:ecoruta/screens/home/home_screen.dart';
 import 'package:ecoruta/screens/profile/profile_screen.dart';
 import 'package:ecoruta/services/auth_service.dart';
@@ -8,7 +8,7 @@ import 'package:ecoruta/widgets/confirm_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// AppBar reutilizable con acceso rápido a cierre de sesión.
+/// AppBar reutilizable con acceso rapido a cierre de sesion.
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   const AppHeader({
     super.key,
@@ -19,12 +19,14 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   static const _primaryColor = Color(0xFF012D1D);
   static const _primaryFixed = Color(0xFFC1ECD4);
+  static const _surfaceColor = Color(0xFFF8F9FA);
+  static const _textMuted = Color(0xFF5E6762);
 
   final String title;
   final PreferredSizeWidget? bottom;
   final Color? backgroundColor;
 
-  /// Cierra sesión y redirige al flujo público de la aplicación.
+  /// Cierra sesion y redirige al flujo publico de la aplicacion.
   Future<void> _handleLogout(BuildContext context) async {
     final shouldLogout = await ConfirmDialog.mostrar(
       context,
@@ -58,14 +60,89 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: backgroundColor ?? Colors.white.withValues(alpha: 0.92),
       elevation: 0,
       scrolledUnderElevation: 0,
+      leadingWidth: 72,
       leading: PopupMenuButton<String>(
-        icon: const Icon(Icons.menu_rounded, color: _primaryColor),
+        tooltip: 'Abrir menu',
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
+        shadowColor: Colors.black.withValues(alpha: 0.12),
+        elevation: 14,
+        offset: const Offset(8, 12),
+        padding: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        icon: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: _surfaceColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _primaryColor.withValues(alpha: 0.08)),
+          ),
+          child: const Icon(Icons.menu_rounded, color: _primaryColor),
+        ),
         onSelected: (value) async {
           if (value != 'logout') return;
           await _handleLogout(context);
         },
-        itemBuilder: (context) => const [
-          PopupMenuItem<String>(value: 'logout', child: Text('Cerrar sesión')),
+        itemBuilder: (context) => [
+          const PopupMenuItem<String>(
+            enabled: false,
+            padding: EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'OPCIONES',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: _textMuted,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Gestiona tu sesion actual',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _primaryColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          PopupMenuItem<String>(
+            value: 'logout',
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3EE),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.logout_rounded,
+                    color: Color(0xFFBA1A1A),
+                    size: 18,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Cerrar sesion',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFBA1A1A),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       title: Row(

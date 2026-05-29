@@ -142,7 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SnackBar(content: Text('Usuario registrado correctamente')),
       );
 
-      Navigator.pushReplacementNamed(context, AppRoutes.shell);
+      Navigator.pushNamedAndRemoveUntil(context, AppRoutes.shell, (_) => false);
     } on FirebaseAuthException catch (e) {
       String mensaje = 'Error al registrar usuario';
 

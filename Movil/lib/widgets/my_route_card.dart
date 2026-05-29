@@ -12,6 +12,7 @@ class MyRouteCard extends StatelessWidget {
     this.onEdit,
     this.creatorText,
     this.showDeleteAction = false,
+    this.deleteActionLabel = 'Eliminar',
   });
 
   static const primaryColor = Color(0xFF012D1D);
@@ -28,6 +29,7 @@ class MyRouteCard extends StatelessWidget {
   final VoidCallback? onEdit;
   final String? creatorText;
   final bool showDeleteAction;
+  final String deleteActionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -223,12 +225,17 @@ class MyRouteCard extends StatelessWidget {
                               ),
                             if (onEdit != null) const SizedBox(width: 12),
                             if (showDeleteAction && onDelete != null)
-                              _ActionButton(
-                                icon: Icons.delete_rounded,
-                                backgroundColor: errorContainer,
-                                foregroundColor: errorColor,
-                                onTap: onDelete!,
-                                compact: true,
+                              Expanded(
+                                child: _ActionButton(
+                                  label: deleteActionLabel,
+                                  icon: Icons.delete_outline_rounded,
+                                  backgroundColor: errorContainer,
+                                  foregroundColor: errorColor,
+                                  borderColor: errorColor.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  onTap: onDelete!,
+                                ),
                               ),
                           ],
                         ),
@@ -355,7 +362,7 @@ class _ActionButton extends StatelessWidget {
     required this.foregroundColor,
     required this.onTap,
     this.label,
-    this.compact = false,
+    this.borderColor,
   });
 
   final IconData icon;
@@ -363,7 +370,7 @@ class _ActionButton extends StatelessWidget {
   final Color foregroundColor;
   final VoidCallback onTap;
   final String? label;
-  final bool compact;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -375,14 +382,17 @@ class _ActionButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Ink(
-            padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(14),
+              border: borderColor == null
+                  ? null
+                  : Border.all(color: borderColor!),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
+              mainAxisSize: MainAxisSize.max,
               children: [
                 Icon(icon, size: 20, color: foregroundColor),
                 if (label != null) ...[
