@@ -207,15 +207,24 @@ class FirestoreRepository:
             ) from exc
 
         if not firebase_admin._apps:
-            credential_path = (
-                os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
-                or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-            )
-            if credential_path:
-                cred = credentials.Certificate(credential_path)
-                firebase_admin.initialize_app(cred)
-            else:
-                firebase_admin.initialize_app()
+    credential_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+
+    if credential_json:
+        service_account_info = json.loads(credential_json)
+        cred = credentials.Certificate(service_account_info)
+        firebase_admin.initialize_app(cred)
+
+    else:
+        credential_path = (
+            os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
+            or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        )
+
+        if credential_path:
+            cred = credentials.Certificate(credential_path)
+            firebase_admin.initialize_app(cred)
+        else:
+            firebase_admin.initialize_app()
 
         try:
             return firestore.client()
