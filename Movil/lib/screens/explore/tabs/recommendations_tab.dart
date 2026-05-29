@@ -77,7 +77,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Rutas sugeridas por el modelo segun tu perfil y las rutas publicas que has guardado.',
+          'Sugerencias inteligentes segun tu perfil, tus rutas guardadas y la zona que quieras explorar.',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade700,
@@ -119,7 +119,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         else if (_isLoading)
           const _RecommendationsInfoCard(
             icon: Icons.sync_rounded,
-            message: 'Consultando recomendaciones del modelo...',
+            message: 'Consultando recomendaciones con IA...',
           )
         else if (visibleRecommendations.isEmpty)
           const _RecommendationsInfoCard(
@@ -224,7 +224,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Text(
-              'TWO-TOWER',
+              'IA PERSONALIZADA',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
@@ -246,7 +246,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
           const SizedBox(height: 8),
           Text(
             _selectedZoneLabel == null
-                ? 'El modelo prioriza tus rutas publicas guardadas y tu perfil para rankear nuevas opciones.'
+                ? 'La IA cruza tus preferencias, actividad favorita y rutas guardadas para descubrir nuevas opciones.'
                 : 'Mostrando sugerencias filtradas por $_selectedZoneLabel.',
             style: const TextStyle(
               fontSize: 14,
@@ -415,7 +415,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
 
   String _resultsSummary(int visibleCount) {
     if (_errorMessage != null) {
-      return 'No se pudo completar la consulta del modelo';
+      return 'No se pudo completar la consulta de recomendaciones';
     }
     if (_isLoading) {
       return 'Consultando rutas recomendadas por IA';

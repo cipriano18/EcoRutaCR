@@ -74,6 +74,19 @@ class SavedRoutesService {
     return snapshot.docs.map(StoredRoute.fromDocument).toList(growable: false);
   }
 
+  Future<Set<String>> fetchSavedPublicSourceRouteIds() async {
+    final uid = _requireUserId();
+
+    final snapshot = await _savedPublicRoutes
+        .where('savedByUserId', isEqualTo: uid)
+        .get();
+
+    return snapshot.docs
+        .map((doc) => (doc.data()['sourceRouteId'] as String?)?.trim() ?? '')
+        .where((routeId) => routeId.isNotEmpty)
+        .toSet();
+  }
+
   Future<Map<String, String>> fetchUserDisplayNames(
     Iterable<String> userIds,
   ) async {

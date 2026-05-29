@@ -1,3 +1,4 @@
+import 'package:ecoruta/models/user_model.dart';
 import 'package:ecoruta/providers/user_provider.dart';
 import 'package:ecoruta/screens/home/home_screen.dart';
 import 'package:ecoruta/screens/profile/avatar_picker_screen.dart';
@@ -105,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               totalKilometers: totalKilometers,
             ),
             const SizedBox(height: 16),
-            _healthInsightsCard(healthInference: healthInference),
+            _healthInsightsCard(user: user, healthInference: healthInference),
             const SizedBox(height: 16),
             StreakStatusCard(streakWeeks: streakWeeks),
             const SizedBox(height: 34),
@@ -410,11 +411,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _healthInsightsCard({required dynamic healthInference}) {
+  Widget _healthInsightsCard({
+    required UserModel? user,
+    required dynamic healthInference,
+  }) {
     final bmi = healthInference?.bmi;
+    final bmiCategory = healthInference?.bmiCategory;
     final activityLevel = healthInference?.activityLevel;
-    final wellnessStatus = healthInference?.wellnessStatus;
-    final wellnessScore = healthInference?.wellnessScore;
+    final summary = _buildHealthSummary(
+      user: user,
+      bmiCategory: bmiCategory,
+      activityLevel: activityLevel,
+    );
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -481,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _labelForWellnessStatus(wellnessStatus),
+                  summary.title,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
@@ -490,9 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  wellnessScore == null
-                      ? 'Completa tu peso, altura y constancia de rutas para generar una lectura mas completa.'
-                      : 'Puntaje de bienestar: ${wellnessScore.toStringAsFixed(0)}/100',
+                  summary.message,
                   style: const TextStyle(
                     fontSize: 13,
                     color: Colors.black54,
@@ -522,17 +528,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  String _labelForWellnessStatus(String? value) {
-    switch (value) {
-      case 'saludable':
-        return 'Estado saludable';
-      case 'mejorable':
-        return 'Area de mejora';
-      case 'atencion':
-        return 'Atencion sugerida';
-      default:
-        return 'Datos insuficientes';
+  _HealthSummary _buildHealthSummary({
+    required UserModel? user,
+    required String? bmiCategory,
+    required String? activityLevel,
+  }) {
+    if (user == null) {
+      return const _HealthSummary(
+        title: 'Faltan datos para una lectura completa',
+        message:
+            'Todavia no tenemos suficiente informacion de tu perfil para darte una lectura clara de salud.',
+      );
     }
+
+    final hasBodyMetrics = user.weightKg != null && user.heightCm != null;
+    final hasWeeklySignals = user.routesPerWeekAvg != null ||
+        user.kmPerWeekAvg != null ||
+        user.minutesPerWeekAvg != null ||
+        user.activityConsistencyScore != null;
+
+    if (!hasBodyMetrics || !hasWeeklySignals) {
+      return const _HealthSummary(
+        title: 'Faltan datos para una lectura completa',
+        message:
+            'Completa tu peso, altura y registra mas actividad para darte una lectura mas clara y personalizada.',
+      );
+    }
+
+    final consistencyScore = user.activityConsistencyScore;
+    final hasLowConsistency = consistencyScore != null && consistencyScore < 45;
+    final hasStrongConsistency =
+        consistencyScore != null && consistencyScore >= 70;
+    final isNormalBmi = bmiCategory == 'normal';
+    final isRiskBmi = bmiCategory == 'overweight' || bmiCategory == 'obesity';
+    final isUnderweight = bmiCategory == 'underweight';
+
+    if ((activityLevel == 'high' || activityLevel == 'good') &&
+        isNormalBmi &&
+        !hasLowConsistency) {
+      return const _HealthSummary(
+        title: 'Buen equilibrio general',
+        message:
+            'Tu actividad reciente y tus indicadores corporales muestran una base positiva y bastante estable.',
+      );
+    }
+
+    if (activityLevel == 'moderate' ||
+        ((activityLevel == 'good' || activityLevel == 'high') &&
+            !hasStrongConsistency)) {
+      return const _HealthSummary(
+        title: 'Actividad en progreso',
+        message:
+            'Vas construyendo una buena base, pero todavia hace falta mas constancia semanal para consolidar el ritmo.',
+      );
+    }
+
+    if (activityLevel == 'low' || hasLowConsistency) {
+      return const _HealthSummary(
+        title: 'Conviene retomar constancia',
+        message:
+            'Tu actividad reciente es baja o irregular. Recuperar una rutina semanal te dara una lectura mas solida y favorable.',
+      );
+    }
+
+    if (isRiskBmi && activityLevel != 'high' && activityLevel != 'good') {
+      return const _HealthSummary(
+        title: 'Actividad en progreso',
+        message:
+            'Tu perfil muestra margen de mejora en condicion general. Mantener actividad frecuente puede ayudarte a estabilizar estos indicadores.',
+      );
+    }
+
+    if (isUnderweight) {
+      return const _HealthSummary(
+        title: 'Lectura para seguir de cerca',
+        message:
+            'Tus indicadores corporales merecen seguimiento. Mantener actividad y revisar tus habitos puede darte una lectura mas equilibrada.',
+      );
+    }
+
+    return const _HealthSummary(
+      title: 'Lectura general disponible',
+      message:
+          'Ya contamos con una base de datos util. Seguir registrando actividad nos ayudara a afinar mejor esta lectura.',
+    );
   }
 
   String _formatKmCounter(num value) {
@@ -641,4 +720,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+}
+
+class _HealthSummary {
+  const _HealthSummary({required this.title, required this.message});
+
+  final String title;
+  final String message;
 }

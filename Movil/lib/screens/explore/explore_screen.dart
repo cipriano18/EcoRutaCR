@@ -57,8 +57,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                 ),
                 child: TabBar(
                   controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
+                  isScrollable: false,
                   indicator: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -74,7 +73,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   dividerColor: Colors.transparent,
                   labelColor: _primaryColor,
                   unselectedLabelColor: Colors.grey,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                  labelPadding: EdgeInsets.zero,
                   labelStyle: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,

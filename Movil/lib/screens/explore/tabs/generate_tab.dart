@@ -8,7 +8,6 @@ import 'package:ecoruta/services/routing/route_result.dart';
 import 'package:ecoruta/services/saved_routes_service.dart';
 import 'package:ecoruta/widgets/activity_type_card.dart';
 import 'package:ecoruta/widgets/points_preview.dart';
-import 'package:ecoruta/widgets/preference_card.dart';
 import 'package:ecoruta/widgets/route_result_card.dart';
 import 'package:ecoruta/widgets/save_route_sheet.dart';
 import 'package:flutter/material.dart';
@@ -27,16 +26,15 @@ class GenerateTab extends StatefulWidget {
 
 class _GenerateTabState extends State<GenerateTab> {
   static const _primaryColor = Color(0xFF012D1D);
-  static const _surfaceLow = Color(0xFFF3F4F5);
+  static const _primaryGlow = Color(0xFF1E6B4C);
   static const _secondaryContainer = Color(0xFFAEEECB);
-  static const _tertiaryContainer = Color(0xFF721D00);
   static const _tertiaryFixed = Color(0xFFFFB59F);
 
   final MapController _mapController = MapController();
   final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
-  RoutingPreference _selectedPreference = RoutingPreference.shortest;
   RouteProfile _selectedProfile = RouteProfile.hiking;
+  Map<RoutingPreference, RouteResult?> _generatedRoutes = const {};
   LatLng? _startPoint;
   LatLng? _destinationPoint;
   LatLng? _currentLocation;
@@ -161,19 +159,44 @@ class _GenerateTabState extends State<GenerateTab> {
     final provider = context.read<ExploreProvider>();
     provider.setProfile(_selectedProfile);
 
-    setState(() => _hasGenerated = true);
+    setState(() {
+      _hasGenerated = true;
+      _generatedRoutes = const {};
+    });
 
     await provider.generateRoutes(
       startLat: _startPoint!.latitude,
       startLon: _startPoint!.longitude,
       endLat: _destinationPoint!.latitude,
       endLon: _destinationPoint!.longitude,
-      preference: _selectedPreference,
+      preference: RoutingPreference.shortest,
     );
+
+    final shortestRoute = provider.routes[RoutingPreference.shortest];
+
+    await provider.generateRoutes(
+      startLat: _startPoint!.latitude,
+      startLon: _startPoint!.longitude,
+      endLat: _destinationPoint!.latitude,
+      endLon: _destinationPoint!.longitude,
+      preference: RoutingPreference.mostChallenging,
+    );
+
+    final challengingRoute =
+        provider.routes[RoutingPreference.mostChallenging];
+
+    if (!mounted) return;
+    setState(() {
+      _generatedRoutes = {
+        RoutingPreference.shortest: shortestRoute,
+        RoutingPreference.mostChallenging: challengingRoute,
+      };
+    });
   }
 
   Future<void> _saveRoute({
     required RouteResult route,
+    required RoutingPreference preference,
     required String title,
     required String startLabel,
     required String endLabel,
@@ -199,7 +222,7 @@ class _GenerateTabState extends State<GenerateTab> {
         description: saveData.description,
         visibility: saveData.visibility,
         activityProfile: _selectedProfile,
-        routingPreference: _selectedPreference,
+        routingPreference: preference,
         startLabel: startLabel,
         endLabel: endLabel,
         route: route,
@@ -220,6 +243,7 @@ class _GenerateTabState extends State<GenerateTab> {
           ),
         ),
       );
+      _resetGeneratedStateAfterSave();
     } on SavedRouteException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -247,7 +271,9 @@ class _GenerateTabState extends State<GenerateTab> {
 
     return Consumer<ExploreProvider>(
       builder: (context, exploreProvider, _) {
-        final selectedRoute = exploreProvider.routes[_selectedPreference];
+        final shortestRoute = _generatedRoutes[RoutingPreference.shortest];
+        final challengingRoute =
+            _generatedRoutes[RoutingPreference.mostChallenging];
 
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -263,32 +289,7 @@ class _GenerateTabState extends State<GenerateTab> {
               onSwap: _swapLocations,
               onSelectPoints: _openPointsPicker,
             ),
-            const SizedBox(height: 28),
-            const _SectionTitle(title: 'Preferencia de Ruta'),
-            const SizedBox(height: 14),
-            PreferenceCard(
-              title: 'Más Corta',
-              subtitle: 'Minimiza la distancia total',
-              description:
-                  'Prioriza el recorrido de menor distancia entre los puntos seleccionados.',
-              icon: Icons.straighten_rounded,
-              accentColor: _primaryColor,
-              backgroundColor: _surfaceLow,
-              selected: _selectedPreference == RoutingPreference.shortest,
-              onTap: () => setState(() => _selectedPreference = RoutingPreference.shortest),
-            ),
-            const SizedBox(height: 12),
-            PreferenceCard(
-              title: 'Más Desafiante',
-              subtitle: 'Favorece el desnivel positivo',
-              description:
-                  'Prioriza segmentos con mayor ganancia de elevación en el recorrido.',
-              icon: Icons.terrain_rounded,
-              accentColor: _tertiaryContainer,
-              backgroundColor: _tertiaryFixed,
-              selected: _selectedPreference == RoutingPreference.mostChallenging,
-              onTap: () => setState(() => _selectedPreference = RoutingPreference.mostChallenging),
-            ),
+
             const SizedBox(height: 24),
             const _SectionTitle(title: 'Tipo de actividad'),
             const SizedBox(height: 14),
@@ -328,40 +329,74 @@ class _GenerateTabState extends State<GenerateTab> {
             const SizedBox(height: 4),
             const _ScrollHint(),
             const SizedBox(height: 20),
-            FilledButton(
+            _AiActionButton(
+              label: exploreProvider.isLoading
+                  ? 'Generando rutas con IA...'
+                  : 'Generar con IA',
+              hint:
+                  'Calcula una ruta corta y otra desafiante segun tu actividad.',
+              icon: Icons.auto_awesome_rounded,
+              isLoading: exploreProvider.isLoading,
               onPressed: exploreProvider.isLoading ? null : _generateRoutes,
-              style: FilledButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
+              primaryColor: _primaryColor,
+              glowColor: _primaryGlow,
+            ),
+            const SizedBox(height: 28),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    _secondaryContainer.withValues(alpha: 0.34),
+                  ],
                 ),
-                shadowColor: _primaryColor.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _secondaryContainer.withValues(alpha: 0.85),
+                ),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (exploreProvider.isLoading)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.2,
-                        color: Colors.white,
-                      ),
-                    )
-                  else
-                    const Icon(Icons.bolt_rounded, size: 24),
-                  const SizedBox(width: 10),
-                  Text(
-                    exploreProvider.isLoading
-                        ? 'Generando rutas...'
-                        : 'Generar Ruta',
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: _primaryColor,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.psychology_alt_rounded,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'IA aplicada a tu recorrido',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: _primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Elegimos dos estilos de ruta para ayudarte a comparar rapidez y reto sin cambiar de pantalla.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: Colors.grey.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -371,7 +406,11 @@ class _GenerateTabState extends State<GenerateTab> {
             const _SectionTitle(title: 'Rutas Generadas'),
             const SizedBox(height: 4),
             Text(
-              _resultSummaryText(exploreProvider, selectedRoute),
+              _resultSummaryText(
+                provider: exploreProvider,
+                shortestRoute: shortestRoute,
+                challengingRoute: challengingRoute,
+              ),
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.grey,
@@ -380,106 +419,127 @@ class _GenerateTabState extends State<GenerateTab> {
             ),
             const SizedBox(height: 16),
             const SizedBox(height: 8),
-            if (exploreProvider.errorMessage != null && _hasGenerated)
+            if (exploreProvider.errorMessage != null &&
+                _hasGenerated &&
+                shortestRoute == null &&
+                challengingRoute == null)
               _InfoCard(
-                message: exploreProvider.errorMessage!,
+                message: _friendlyNoRoutesMessage(),
                 icon: Icons.error_outline_rounded,
                 iconColor: Colors.redAccent,
               )
             else if (!_hasGenerated)
               _InfoCard(
                 message:
-                    'Selecciona la actividad, el origen y el destino para calcular la ruta ${_preferenceLabel()}.',
+                    'Selecciona la actividad, el origen y el destino para calcular rutas.',
                 icon: Icons.route_rounded,
                 iconColor: _primaryColor,
               )
             else if (exploreProvider.isLoading)
               _InfoCard(
-                message: 'Calculando la ruta ${_preferenceLabel()}...',
+                message: 'Calculando rutas...',
                 icon: Icons.sync_rounded,
                 iconColor: _primaryColor,
               )
-            else if (selectedRoute == null)
-              const _InfoCard(
-                message:
-                    'No se encontro una ruta para esta preferencia con los puntos seleccionados.',
+            else if (shortestRoute == null && challengingRoute == null)
+              _InfoCard(
+                message: _friendlyNoRoutesMessage(),
                 icon: Icons.alt_route_rounded,
                 iconColor: _primaryColor,
               )
-            else
-              RouteResultCard(
-                title: _titleForRoute(_selectedProfile, _selectedPreference),
-                distance: selectedRoute.formattedDistance,
-                duration: selectedRoute.formattedDuration,
-                elevationGain: selectedRoute.formattedElevationGain,
-                accentColor: _accentForPreference(_selectedPreference),
-                icon: _iconForPreference(_selectedPreference),
-                isHighlighted: false,
-                buttonText: 'Ver trazado',
-                secondaryButtonText: 'Guardar ruta',
-                isSecondaryLoading: _isSavingRoute,
-                onSecondaryPressed: _isSavingRoute
-                    ? null
-                    : () => _saveRoute(
-                        route: selectedRoute,
-                        title: _titleForRoute(
-                          _selectedProfile,
-                          _selectedPreference,
-                        ),
-                        startLabel: previewStartLabel,
-                        endLabel: _destinationLabel,
-                      ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => RoutePreviewScreen(
-                        title: _titleForRoute(
-                          _selectedProfile,
-                          _selectedPreference,
-                        ),
-                        route: selectedRoute,
-                        profile: _selectedProfile,
-                        preference: _selectedPreference,
-                        startLabel: previewStartLabel,
-                        endLabel: _destinationLabel,
-                        allowSave: false,
-                      ),
-                    ),
-                  );
-                },
-              ),
+            else ...[
+              if (shortestRoute != null)
+                _buildRouteCard(
+                  route: shortestRoute,
+                  preference: RoutingPreference.shortest,
+                  previewStartLabel: previewStartLabel,
+                ),
+              if (shortestRoute != null && challengingRoute != null)
+                const SizedBox(height: 16),
+              if (challengingRoute != null)
+                _buildRouteCard(
+                  route: challengingRoute,
+                  preference: RoutingPreference.mostChallenging,
+                  previewStartLabel: previewStartLabel,
+                ),
+            ],
           ],
         );
       },
     );
   }
 
-  String _resultSummaryText(
-    ExploreProvider provider,
-    RouteResult? selectedRoute,
-  ) {
+  Widget _buildRouteCard({
+    required RouteResult route,
+    required RoutingPreference preference,
+    required String previewStartLabel,
+  }) {
+    return RouteResultCard(
+      title: _titleForRoute(_selectedProfile, preference),
+      distance: route.formattedDistance,
+      duration: route.formattedDuration,
+      elevationGain: route.formattedElevationGain,
+      accentColor: _accentForPreference(preference),
+      icon: _iconForPreference(preference),
+      isHighlighted: false,
+      buttonText: 'Ver trazado',
+      secondaryButtonText: 'Guardar ruta',
+      isSecondaryLoading: _isSavingRoute,
+      onSecondaryPressed: _isSavingRoute
+          ? null
+          : () => _saveRoute(
+              route: route,
+              preference: preference,
+              title: _titleForRoute(_selectedProfile, preference),
+              startLabel: previewStartLabel,
+              endLabel: _destinationLabel,
+            ),
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RoutePreviewScreen(
+              title: _titleForRoute(_selectedProfile, preference),
+              route: route,
+              profile: _selectedProfile,
+              preference: preference,
+              startLabel: previewStartLabel,
+              endLabel: _destinationLabel,
+              allowSave: false,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String _resultSummaryText({
+    required ExploreProvider provider,
+    required RouteResult? shortestRoute,
+    required RouteResult? challengingRoute,
+  }) {
     if (!_hasGenerated) {
       return 'Aun no se han generado sugerencias';
     }
     if (provider.isLoading) {
-      return 'Calculando ruta ${_preferenceLabel()} para ${_activityLabel(_selectedProfile).toLowerCase()}';
+      return 'Calculando rutas para ${_activityLabel(_selectedProfile).toLowerCase()}';
     }
-    if (provider.errorMessage != null) {
-      return 'No se pudo generar la ruta ${_preferenceLabel()} con los puntos elegidos';
+    if (provider.errorMessage != null &&
+        shortestRoute == null &&
+        challengingRoute == null) {
+      return _friendlyNoRoutesMessage();
     }
-    if (selectedRoute == null) {
-      return 'No hubo resultado para la ruta ${_preferenceLabel()}';
+    if (shortestRoute == null && challengingRoute == null) {
+      return _friendlyNoRoutesMessage();
     }
-    return 'Resultado real de la ruta ${_preferenceLabel()} para ${_activityLabel(_selectedProfile).toLowerCase()}';
+    final totalRoutes = [
+      shortestRoute,
+      challengingRoute,
+    ].whereType<RouteResult>().length;
+    return 'Se generaron $totalRoutes rutas para ${_activityLabel(_selectedProfile).toLowerCase()}';
   }
 
-  String _preferenceLabel() {
-    switch (_selectedPreference) {
-      case RoutingPreference.shortest:
-        return 'más corta';
-      case RoutingPreference.mostChallenging:
-        return 'más desafiante';
-    }
+  String _friendlyNoRoutesMessage() {
+    return 'No hay rutas para ${_activityLabel(_selectedProfile).toLowerCase()} entre los dos puntos seleccionados.';
   }
 
   String _activityLabel(RouteProfile profile) {
@@ -543,6 +603,26 @@ class _GenerateTabState extends State<GenerateTab> {
     return 'Para $activity, el origen y destino no deben superar ${maxDistanceKm.toStringAsFixed(0)} km en linea recta.';
   }
 
+  void _resetGeneratedStateAfterSave() {
+    if (!mounted) return;
+
+    setState(() {
+      _generatedRoutes = const {};
+      _hasGenerated = false;
+      _destinationPoint = null;
+      _destinationLabel = 'Pendiente de seleccionar';
+
+      if (_currentLocation != null) {
+        _startPoint = _currentLocation;
+        _startLabel = _formatCoordinates(_currentLocation!);
+      } else {
+        _startPoint = null;
+        _startLabel = 'Ubicacion actual no disponible';
+      }
+    });
+    _syncPreviewMap();
+  }
+
   void _syncPreviewMap() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final center = _startPoint != null && _destinationPoint != null
@@ -604,6 +684,100 @@ class _ScrollHint extends StatelessWidget {
 }
 
 /// Tarjeta informativa para estados vacíos, carga o error.
+class _AiActionButton extends StatelessWidget {
+  const _AiActionButton({
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.isLoading,
+    required this.onPressed,
+    required this.primaryColor,
+    required this.glowColor,
+  });
+
+  final String label;
+  final String hint;
+  final IconData icon;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+  final Color primaryColor;
+  final Color glowColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: glowColor.withValues(alpha: 0.22),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [primaryColor, glowColor],
+            ),
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLoading)
+                    const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    Icon(icon, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          hint,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12.5,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _InfoCard extends StatelessWidget {
   const _InfoCard({
     required this.message,

@@ -119,6 +119,8 @@ class _SearchTabState extends State<SearchTab> {
 
     try {
       final publicRoutes = await _savedRoutesService.fetchPublicRoutes();
+      final savedSourceRouteIds =
+          await _savedRoutesService.fetchSavedPublicSourceRouteIds();
       final creatorNames = await _savedRoutesService.fetchUserDisplayNames(
         publicRoutes.map((route) => route.ownerId),
       );
@@ -129,6 +131,10 @@ class _SearchTabState extends State<SearchTab> {
             }
 
             if (route.activityProfile != _selectedProfile) {
+              return false;
+            }
+
+            if (savedSourceRouteIds.contains(route.id)) {
               return false;
             }
 
@@ -478,6 +484,7 @@ class _SearchTabState extends State<SearchTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ruta guardada en la pestaña Guardadas.')),
       );
+      _resetSearchStateAfterSave(routeData.route.id);
     } on SavedRouteException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -499,6 +506,21 @@ class _SearchTabState extends State<SearchTab> {
       case RouteProfile.running:
         return 'Running';
     }
+  }
+
+  void _resetSearchStateAfterSave(String savedRouteId) {
+    if (!mounted) return;
+
+    setState(() {
+      _destinationPoint = null;
+      _destinationLabel = 'Pendiente de seleccionar';
+      _hasSearchedRoutes = false;
+      _searchErrorMessage = null;
+      _publicRoutes = _publicRoutes
+          .where((routeData) => routeData.route.id != savedRouteId)
+          .toList(growable: false);
+    });
+    _syncPreviewMap();
   }
 
   Color _accentForProfile(RouteProfile profile) {

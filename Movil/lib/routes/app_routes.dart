@@ -11,7 +11,7 @@ import '../screens/home/home_screen.dart';
 /// Centraliza las rutas nombradas y sus dependencias de arranque.
 class AppRoutes {
   /// Ruta de bienvenida de la aplicación.
-  static const String home = '/';
+  static const String home = '/home';
 
   /// Ruta de inicio de sesión.
   static const String login = '/login';

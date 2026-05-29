@@ -1,11 +1,14 @@
 import 'package:ecoruta/firebase_options.dart';
+import 'package:ecoruta/navigation/main_shell.dart';
 import 'package:ecoruta/providers/user_provider.dart';
 import 'package:ecoruta/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'routes/app_routes.dart';
+import 'screens/home/home_screen.dart';
 
 /// Inicializa Firebase y registra los providers globales de la app.
 Future<void> main() async {
@@ -40,9 +43,9 @@ class EcoRutaApp extends StatelessWidget {
         ),
         fontFamily: 'Arial',
       ),
-      initialRoute: AppRoutes.home,
-
-      //initialRoute: AppRoutes.overpassTest,
+      home: FirebaseAuth.instance.currentUser == null
+          ? const HomeScreen()
+          : const MainShell(),
       routes: AppRoutes.routes,
     );
   }
