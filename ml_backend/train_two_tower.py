@@ -1,3 +1,4 @@
+```python
 from __future__ import annotations
 
 import argparse
@@ -11,9 +12,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-
 BASE_DIR = Path(__file__).resolve().parent
 ARTIFACTS_DIR = BASE_DIR / "artifacts"
+
 COLLECTION_USERS = "users"
 COLLECTION_ROUTES = "routes"
 COLLECTION_SAVED = "saved_public_routes"
@@ -26,33 +27,43 @@ def _now_utc() -> datetime:
 def _as_datetime(value: Any) -> datetime | None:
     if value is None:
         return None
+
     if isinstance(value, datetime):
         if value.tzinfo is None:
             return value.replace(tzinfo=UTC)
         return value.astimezone(UTC)
+
     if hasattr(value, "to_datetime"):
         converted = value.to_datetime()
+
         if converted.tzinfo is None:
             return converted.replace(tzinfo=UTC)
+
         return converted.astimezone(UTC)
+
     return None
 
 
 def _safe_float(value: Any) -> float:
     if value is None:
         return 0.0
+
     if isinstance(value, bool):
         return float(value)
+
     if isinstance(value, (int, float)):
         return float(value)
+
     try:
         return float(str(value).strip())
+
     except (TypeError, ValueError):
         return 0.0
 
 
 def _normalize_activity(value: Any) -> str:
     raw = str(value or "").strip().lower()
+
     mapping = {
         "senderismo": "hiking",
         "hiking": "hiking",
@@ -61,6 +72,7 @@ def _normalize_activity(value: Any) -> str:
         "running": "running",
         "correr": "running",
     }
+
     return mapping.get(raw, "unknown")
 
 
@@ -68,17 +80,29 @@ def _extract_region(*labels: str | None) -> str:
     for label in labels:
         if not label:
             continue
-        parts = [part.strip().lower() for part in str(label).split(",") if part.strip()]
+
+        parts = [
+            part.strip().lower()
+            for part in str(label).split(",")
+            if part.strip()
+        ]
+
         if parts:
             return parts[-1]
+
     return "unknown"
 
 
-def _compute_age_years(birth_date: datetime | None, reference: datetime | None = None) -> float:
+def _compute_age_years(
+    birth_date: datetime | None,
+    reference: datetime | None = None,
+) -> float:
     if birth_date is None:
         return 0.0
+
     current = reference or _now_utc()
     delta_days = max((current - birth_date).days, 0)
+
     return delta_days / 365.25
 
 
@@ -92,14 +116,24 @@ class UserRecord:
     age_years: float
 
     @classmethod
-    def from_firestore(cls, doc_id: str, data: dict[str, Any]) -> "UserRecord":
+    def from_firestore(
+        cls,
+        doc_id: str,
+        data: dict[str, Any],
+    ) -> "UserRecord":
         return cls(
             uid=doc_id,
-            favorite_activity=_normalize_activity(data.get("favoriteActivity")),
+            favorite_activity=_normalize_activity(
+                data.get("favoriteActivity")
+            ),
             region=_extract_region(data.get("address")),
             km_counter=_safe_float(data.get("km_counter")),
-            completed_routes=_safe_float(data.get("completed_routes")),
-            age_years=_compute_age_years(_as_datetime(data.get("birth_date"))),
+            completed_routes=_safe_float(
+                data.get("completed_routes")
+            ),
+            age_years=_compute_age_years(
+                _as_datetime(data.get("birth_date"))
+            ),
         )
 
 
@@ -115,18 +149,43 @@ class RouteRecord:
     visibility: str
 
     @classmethod
-    def from_firestore(cls, doc_id: str, data: dict[str, Any]) -> "RouteRecord":
+    def from_firestore(
+        cls,
+        doc_id: str,
+        data: dict[str, Any],
+    ) -> "RouteRecord":
+
         start = data.get("start") or {}
         end = data.get("end") or {}
+
         return cls(
             route_id=doc_id,
-            owner_id=str(data.get("ownerId") or "").strip(),
-            activity=_normalize_activity(data.get("activityProfile")),
-            region=_extract_region(start.get("label"), end.get("label")),
-            distance_km=_safe_float(data.get("totalDistanceMeters")) / 1000.0,
-            duration_min=_safe_float(data.get("estimatedDurationSeconds")) / 60.0,
-            elevation_gain=_safe_float(data.get("elevationGainMeters")),
-            visibility=str(data.get("visibility") or "").strip().lower(),
+            owner_id=str(
+                data.get("ownerId") or ""
+            ).strip(),
+            activity=_normalize_activity(
+                data.get("activityProfile")
+            ),
+            region=_extract_region(
+                start.get("label"),
+                end.get("label"),
+            ),
+            distance_km=(
+                _safe_float(
+                    data.get("totalDistanceMeters")
+                ) / 1000.0
+            ),
+            duration_min=(
+                _safe_float(
+                    data.get("estimatedDurationSeconds")
+                ) / 60.0
+            ),
+            elevation_gain=_safe_float(
+                data.get("elevationGainMeters")
+            ),
+            visibility=str(
+                data.get("visibility") or ""
+            ).strip().lower(),
         )
 
 
@@ -143,19 +202,55 @@ class SavedRouteRecord:
     saved_at: datetime | None
 
     @classmethod
-    def from_firestore(cls, data: dict[str, Any]) -> "SavedRouteRecord":
+    def from_firestore(
+        cls,
+        data: dict[str, Any],
+    ) -> "SavedRouteRecord":
+
         start = data.get("start") or {}
         end = data.get("end") or {}
+
         return cls(
-            saved_by_user_id=str(data.get("savedByUserId") or "").strip(),
-            source_route_id=str(data.get("sourceRouteId") or "").strip(),
-            source_owner_id=str(data.get("sourceOwnerId") or "").strip(),
-            activity=_normalize_activity(data.get("activityProfile")),
-            distance_km=_safe_float(data.get("totalDistanceMeters")) / 1000.0,
-            duration_min=_safe_float(data.get("estimatedDurationSeconds")) / 60.0,
-            elevation_gain=_safe_float(data.get("elevationGainMeters")),
-            region=_extract_region(start.get("label"), end.get("label")),
-            saved_at=_as_datetime(data.get("savedAt")),
+            saved_by_user_id=str(
+                data.get("savedByUserId") or ""
+            ).strip(),
+
+            source_route_id=str(
+                data.get("sourceRouteId") or ""
+            ).strip(),
+
+            source_owner_id=str(
+                data.get("sourceOwnerId") or ""
+            ).strip(),
+
+            activity=_normalize_activity(
+                data.get("activityProfile")
+            ),
+
+            distance_km=(
+                _safe_float(
+                    data.get("totalDistanceMeters")
+                ) / 1000.0
+            ),
+
+            duration_min=(
+                _safe_float(
+                    data.get("estimatedDurationSeconds")
+                ) / 60.0
+            ),
+
+            elevation_gain=_safe_float(
+                data.get("elevationGainMeters")
+            ),
+
+            region=_extract_region(
+                start.get("label"),
+                end.get("label"),
+            ),
+
+            saved_at=_as_datetime(
+                data.get("savedAt")
+            ),
         )
 
 
@@ -189,7 +284,9 @@ class TrainingExample:
 
 class FirestoreRepository:
     def __init__(self) -> None:
-        from google.cloud.firestore_v1.base_query import FieldFilter
+        from google.cloud.firestore_v1.base_query import (
+            FieldFilter,
+        )
 
         self._field_filter_cls = FieldFilter
         self._db = self._initialize_firestore()
@@ -198,69 +295,129 @@ class FirestoreRepository:
     def _initialize_firestore():
         try:
             import firebase_admin
-            from firebase_admin import credentials, firestore
-            from google.auth.exceptions import DefaultCredentialsError
+            from firebase_admin import (
+                credentials,
+                firestore,
+            )
+
+            from google.auth.exceptions import (
+                DefaultCredentialsError,
+            )
+
         except ImportError as exc:
             raise RuntimeError(
-                "Falta la dependencia 'firebase-admin'. Ejecuta: "
-                "pip install -r ml_backend/requirements.txt"
+                "Falta firebase-admin."
             ) from exc
 
         if not firebase_admin._apps:
-    credential_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 
-    if credential_json:
-        service_account_info = json.loads(credential_json)
-        cred = credentials.Certificate(service_account_info)
-        firebase_admin.initialize_app(cred)
+            credential_json = os.getenv(
+                "GOOGLE_APPLICATION_CREDENTIALS_JSON"
+            )
 
-    else:
-        credential_path = (
-            os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH")
-            or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        )
+            if credential_json:
+                service_account_info = json.loads(
+                    credential_json
+                )
 
-        if credential_path:
-            cred = credentials.Certificate(credential_path)
-            firebase_admin.initialize_app(cred)
-        else:
-            firebase_admin.initialize_app()
+                cred = credentials.Certificate(
+                    service_account_info
+                )
+
+                firebase_admin.initialize_app(cred)
+
+            else:
+                credential_path = (
+                    os.getenv(
+                        "FIREBASE_SERVICE_ACCOUNT_PATH"
+                    )
+                    or os.getenv(
+                        "GOOGLE_APPLICATION_CREDENTIALS"
+                    )
+                )
+
+                if credential_path:
+                    cred = credentials.Certificate(
+                        credential_path
+                    )
+
+                    firebase_admin.initialize_app(
+                        cred
+                    )
+
+                else:
+                    firebase_admin.initialize_app()
 
         try:
             return firestore.client()
+
         except DefaultCredentialsError as exc:
             raise RuntimeError(
-                "No se encontraron credenciales de admin para Firestore. "
-                "Descarga un service account JSON desde Firebase Console y "
-                "define FIREBASE_SERVICE_ACCOUNT_PATH o "
-                "GOOGLE_APPLICATION_CREDENTIALS apuntando a ese archivo."
+                "No se encontraron credenciales de Firestore."
             ) from exc
 
     def fetch_users(self) -> dict[str, UserRecord]:
-        documents = self._db.collection(COLLECTION_USERS).stream()
+        documents = self._db.collection(
+            COLLECTION_USERS
+        ).stream()
+
         users: dict[str, UserRecord] = {}
+
         for doc in documents:
             data = doc.to_dict() or {}
-            users[doc.id] = UserRecord.from_firestore(doc.id, data)
+
+            users[doc.id] = UserRecord.from_firestore(
+                doc.id,
+                data,
+            )
+
         return users
 
-    def fetch_public_routes(self) -> dict[str, RouteRecord]:
-        query = self._db.collection(COLLECTION_ROUTES).where(
-            filter=self._field_filter_cls("visibility", "==", "public")
+    def fetch_public_routes(
+        self,
+    ) -> dict[str, RouteRecord]:
+
+        query = self._db.collection(
+            COLLECTION_ROUTES
+        ).where(
+            filter=self._field_filter_cls(
+                "visibility",
+                "==",
+                "public",
+            )
         )
+
         routes: dict[str, RouteRecord] = {}
+
         for doc in query.stream():
             data = doc.to_dict() or {}
-            route = RouteRecord.from_firestore(doc.id, data)
+
+            route = RouteRecord.from_firestore(
+                doc.id,
+                data,
+            )
+
             routes[doc.id] = route
+
         return routes
 
-    def fetch_saved_public_routes(self) -> list[SavedRouteRecord]:
-        documents = self._db.collection(COLLECTION_SAVED).stream()
+    def fetch_saved_public_routes(
+        self,
+    ) -> list[SavedRouteRecord]:
+
+        documents = self._db.collection(
+            COLLECTION_SAVED
+        ).stream()
+
         saved_routes: list[SavedRouteRecord] = []
+
         for doc in documents:
             data = doc.to_dict() or {}
-            saved_routes.append(SavedRouteRecord.from_firestore(data))
+
+            saved_routes.append(
+                SavedRouteRecord.from_firestore(data)
+            )
+
         return saved_routes
 
     def smoke_test(self) -> dict[str, Any]:
@@ -268,7 +425,7 @@ class FirestoreRepository:
         routes = self.fetch_public_routes()
         saved_routes = self.fetch_saved_public_routes()
         return {
-            "project_root": str(PROJECT_ROOT),
+            "project_root": str(BASE_DIR),
             "users_count": len(users),
             "public_routes_count": len(routes),
             "saved_public_routes_count": len(saved_routes),
