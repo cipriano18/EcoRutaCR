@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-ARTIFACTS_DIR = PROJECT_ROOT / "ml_backend" / "artifacts"
+BASE_DIR = Path(__file__).resolve().parent
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
 COLLECTION_USERS = "users"
 COLLECTION_ROUTES = "routes"
 COLLECTION_SAVED = "saved_public_routes"
