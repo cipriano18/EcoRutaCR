@@ -1,23 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+import '../models/guided_saved_route.dart';
 import '../providers/user_provider.dart';
-import '../services/auth_service.dart';
-import '../screens/map/map_screen.dart';
 import '../screens/explore/explore_screen.dart';
+import '../screens/map/map_screen.dart';
 import '../screens/my_routes/my_routes_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../services/auth_service.dart';
 
-/// Contenedor principal que mantiene la navegación inferior de la app.
+/// Contenedor principal que mantiene la navegacion inferior de la app.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
+  static _MainShellState? _activeState;
+
   /// Permite cambiar de pestaña desde pantallas hijas sin exponer el estado.
   static bool navigateToTab(BuildContext context, int index) {
-    final state = context.findAncestorStateOfType<_MainShellState>();
+    final state =
+        context.findAncestorStateOfType<_MainShellState>() ?? _activeState;
     if (state == null) return false;
     state._goToTab(index);
     return true;
+  }
+
+  /// Abre una ruta guardada en el mapa principal en modo guiado.
+  static bool openGuidedSavedRoute(
+    BuildContext context,
+    GuidedSavedRoute route,
+  ) {
+    final state =
+        context.findAncestorStateOfType<_MainShellState>() ?? _activeState;
+    if (state == null) return false;
+    return state._openGuidedSavedRoute(route);
+  }
+
+  /// Indica si el mapa ya tiene una ruta en proceso que impide cargar otra.
+  static bool hasActiveTrackedRoute(BuildContext context) {
+    final state =
+        context.findAncestorStateOfType<_MainShellState>() ?? _activeState;
+    return state?._hasActiveTrackedRoute ?? false;
   }
 
   @override
@@ -25,22 +48,32 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _currentIndex = 0;
-
   static const _primaryColor = Color(0xFF012D1D);
 
-  // Las 4 pantallas del nav — el orden debe coincidir con los tabs
-  final List<Widget> _screens = const [
-    MapScreen(),
-    ExploreScreen(),
-    MyRoutesScreen(),
-    ProfileScreen(),
-  ];
+  final GlobalKey<MapScreenState> _mapScreenKey = GlobalKey<MapScreenState>();
+
+  late final List<Widget> _screens;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    MainShell._activeState = this;
+    _screens = [
+      MapScreen(key: _mapScreenKey),
+      const ExploreScreen(),
+      const MyRoutesScreen(),
+      const ProfileScreen(),
+    ];
     _syncCurrentUserProfile();
+  }
+
+  @override
+  void dispose() {
+    if (identical(MainShell._activeState, this)) {
+      MainShell._activeState = null;
+    }
+    super.dispose();
   }
 
   /// Sincroniza el perfil autenticado al entrar al shell principal.
@@ -57,6 +90,22 @@ class _MainShellState extends State<MainShell> {
     setState(() => _currentIndex = index);
   }
 
+  bool get _hasActiveTrackedRoute =>
+      _mapScreenKey.currentState?.hasBlockingActiveRoute ?? false;
+
+  bool _openGuidedSavedRoute(GuidedSavedRoute route) {
+    if (_hasActiveTrackedRoute) {
+      return false;
+    }
+
+    _goToTab(0);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _mapScreenKey.currentState?.loadGuidedSavedRoute(route);
+    });
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -66,7 +115,6 @@ class _MainShellState extends State<MainShell> {
         await SystemNavigator.pop();
       },
       child: Scaffold(
-        // Cada tab muestra su pantalla sin rebuilds innecesarios
         body: IndexedStack(index: _currentIndex, children: _screens),
         bottomNavigationBar: _buildBottomNav(),
       ),
@@ -77,7 +125,6 @@ class _MainShellState extends State<MainShell> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.92),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -128,15 +175,8 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// ── Tab item individual ───────────────────────────────────────────────────────
-/// Ítem visual reutilizable para la barra de navegación inferior.
+/// Item visual reutilizable para la barra de navegacion inferior.
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-  final Color activeColor;
-
   const _NavItem({
     required this.icon,
     required this.label,
@@ -144,6 +184,12 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
     required this.activeColor,
   });
+
+  final IconData icon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final Color activeColor;
 
   @override
   Widget build(BuildContext context) {

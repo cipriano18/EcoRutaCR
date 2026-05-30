@@ -38,38 +38,43 @@ class ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompact = screenWidth < 380;
+
     return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       backgroundColor: _surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
       titlePadding: EdgeInsets.zero,
       actionsPadding: EdgeInsets.zero,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            titulo,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: _primary,
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: _primary,
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            mensaje,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: Colors.black54,
+            const SizedBox(height: 10),
+            Text(
+              mensaje,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.45,
+                color: Colors.black54,
+              ),
             ),
-          ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              Expanded(
+            const SizedBox(height: 22),
+            if (isCompact) ...[
+              SizedBox(
+                width: double.infinity,
                 child: OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _primary,
@@ -87,8 +92,9 @@ class ConfirmDialog extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
                     backgroundColor: _primary,
@@ -101,13 +107,55 @@ class ConfirmDialog extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(true),
                   child: Text(
                     textoConfirmar,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
-            ],
-          ),
-        ],
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _primary,
+                        backgroundColor: _surfaceLow,
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text(
+                        'Cancelar',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text(
+                        textoConfirmar,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }

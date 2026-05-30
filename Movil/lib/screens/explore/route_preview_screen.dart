@@ -1,4 +1,5 @@
 import 'package:ecoruta/models/geo_node.dart';
+import 'package:ecoruta/models/guided_saved_route.dart';
 import 'package:ecoruta/models/route_profile.dart';
 import 'package:ecoruta/navigation/main_shell.dart';
 import 'package:ecoruta/services/routing/a_star_router.dart';
@@ -8,6 +9,7 @@ import 'package:ecoruta/widgets/confirm_dialog.dart';
 import 'package:ecoruta/widgets/save_route_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 /// Presenta la geometria y metricas de una ruta ya calculada.
@@ -22,6 +24,7 @@ class RoutePreviewScreen extends StatefulWidget {
     this.endLabel,
     this.allowSave = false,
     this.enableStartAction = false,
+    this.guidedRoute,
   });
 
   final String title;
@@ -32,6 +35,7 @@ class RoutePreviewScreen extends StatefulWidget {
   final String? endLabel;
   final bool allowSave;
   final bool enableStartAction;
+  final GuidedSavedRoute? guidedRoute;
 
   @override
   State<RoutePreviewScreen> createState() => _RoutePreviewScreenState();
@@ -40,6 +44,7 @@ class RoutePreviewScreen extends StatefulWidget {
 class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
   static const _primaryColor = Color(0xFF012D1D);
   static const _accentColor = Color(0xFFFF7043);
+  static const double _guidedStartRangeMeters = 50;
 
   final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
@@ -256,9 +261,12 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text('Ruta guardada en Mis rutas.'),
+          duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'Ver',
             onPressed: () {
@@ -293,15 +301,77 @@ class _RoutePreviewScreenState extends State<RoutePreviewScreen> {
     final confirmed = await ConfirmDialog.mostrar(
       context,
       titulo: 'Iniciar ruta',
-      mensaje: 'Quieres iniciar esta ruta desde el punto de salida marcado?',
-      textoConfirmar: 'Iniciar',
+      mensaje:
+          'Quieres abrir esta ruta en el mapa principal para seguirla desde el punto de salida?',
+      textoConfirmar: 'Comenzar',
     );
 
     if (!confirmed || !mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ruta iniciada. Sigue el punto de inicio.')),
+    final guidedRoute = widget.guidedRoute;
+    if (guidedRoute == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No pudimos preparar esta ruta para seguimiento.'),
+        ),
+      );
+      return;
+    }
+
+    if (MainShell.hasActiveTrackedRoute(context)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tienes una ruta en proceso. Terminala o cancelala para poder iniciar otra.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final isNearStart = await _isUserNearRouteStart(guidedRoute);
+    if (!mounted) return;
+    if (!isNearStart) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Acercate un poco mas al inicio de la ruta para poder comenzarla.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final didOpen = MainShell.openGuidedSavedRoute(context, guidedRoute);
+    if (!didOpen || !mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<bool> _isUserNearRouteStart(GuidedSavedRoute route) async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      return false;
+    }
+
+    final position = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+      ),
     );
+
+    final distance = Geolocator.distanceBetween(
+      position.latitude,
+      position.longitude,
+      route.startPoint.latitude,
+      route.startPoint.longitude,
+    );
+
+    return distance <= _guidedStartRangeMeters;
   }
 
   LatLngBounds _boundsForRoute(List<GeoNode> path) {

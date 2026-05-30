@@ -1,16 +1,17 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ecoruta/models/geo_node.dart';
+import 'package:ecoruta/models/guided_saved_route.dart';
 import 'package:ecoruta/models/route_profile.dart';
 import 'package:ecoruta/models/stored_route.dart';
 import 'package:ecoruta/services/routing/a_star_router.dart';
 import 'package:ecoruta/services/routing/route_result.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:latlong2/latlong.dart';
 
 class SavedRoutesService {
   SavedRoutesService({FirebaseFirestore? firestore, FirebaseAuth? auth})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
@@ -22,6 +23,8 @@ class SavedRoutesService {
 
   CollectionReference<Map<String, dynamic>> get _savedPublicRoutes =>
       _firestore.collection('saved_public_routes');
+  CollectionReference<Map<String, dynamic>> get _routeCompletionSessions =>
+      _firestore.collection('route_completion_sessions');
 
   Stream<List<StoredRoute>> watchUserRoutes() {
     final uid = _requireUserId();
@@ -141,9 +144,7 @@ class SavedRoutesService {
     final path = route.path;
 
     if (path.isEmpty) {
-      throw const SavedRouteException(
-        'No hay puntos para guardar la ruta.',
-      );
+      throw const SavedRouteException('No hay puntos para guardar la ruta.');
     }
 
     final startNode = path.first;
@@ -260,13 +261,61 @@ class SavedRoutesService {
       return docId;
     } on FirebaseException catch (e) {
       if (e.code == 'already-exists') {
-        throw const SavedRouteException(
-          'Ya guardaste esta ruta publica.',
-        );
+        throw const SavedRouteException('Ya guardaste esta ruta publica.');
       }
 
       rethrow;
     }
+  }
+
+  Future<String> saveRouteCompletionSession({
+    required GuidedSavedRoute sourceRoute,
+    required DateTime startedAt,
+    required DateTime finishedAt,
+    required double completionDistanceMeters,
+    required int completionDurationSeconds,
+    required double elevationGainMeters,
+    required List<LatLng> recordedPath,
+  }) async {
+    final uid = _requireUserId();
+    if (recordedPath.isEmpty) {
+      throw const SavedRouteException(
+        'No se pudo guardar la sesion porque no hay recorrido registrado.',
+      );
+    }
+
+    final path = recordedPath
+        .asMap()
+        .entries
+        .map(
+          (entry) => GeoNode(
+            id: entry.key,
+            latitude: entry.value.latitude,
+            longitude: entry.value.longitude,
+          ),
+        )
+        .toList(growable: false);
+    final polyline = StoredRoute.encodePath(path);
+
+    final payload = {
+      'userId': uid,
+      'sourceRouteId': sourceRoute.routeId,
+      'sourceRouteTitle': sourceRoute.title,
+      'activityProfile': sourceRoute.activityProfile.name,
+      'startedNearStart': true,
+      'finishedNearEnd': true,
+      'startedAt': Timestamp.fromDate(startedAt),
+      'finishedAt': Timestamp.fromDate(finishedAt),
+      'completionDistanceMeters': completionDistanceMeters,
+      'completionDurationSeconds': completionDurationSeconds,
+      'elevationGainMeters': elevationGainMeters,
+      'recordedPolyline': polyline,
+      'pointCount': recordedPath.length,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    final doc = await _routeCompletionSessions.add(payload);
+    return doc.id;
   }
 
   Future<void> deleteRoute(String routeId) async {
@@ -279,13 +328,10 @@ class SavedRoutesService {
     final snapshot = await _savedPublicRoutes.doc(savedRouteId).get();
 
     if (!snapshot.exists) {
-      throw const SavedRouteException(
-        'La ruta guardada ya no existe.',
-      );
+      throw const SavedRouteException('La ruta guardada ya no existe.');
     }
 
-    final savedByUserId =
-        snapshot.data()?['savedByUserId'] as String?;
+    final savedByUserId = snapshot.data()?['savedByUserId'] as String?;
 
     if (savedByUserId != uid) {
       throw const SavedRouteException(
@@ -345,12 +391,7 @@ class SavedRoutesService {
       if (node.longitude > east) east = node.longitude;
     }
 
-    return {
-      'south': south,
-      'west': west,
-      'north': north,
-      'east': east,
-    };
+    return {'south': south, 'west': west, 'north': north, 'east': east};
   }
 
   String _requireUserId() {
@@ -370,9 +411,7 @@ class SavedRoutesService {
     final snapshot = await _routes.doc(routeId).get();
 
     if (!snapshot.exists) {
-      throw const SavedRouteException(
-        'La ruta no existe.',
-      );
+      throw const SavedRouteException('La ruta no existe.');
     }
 
     final ownerId = snapshot.data()?['ownerId'] as String?;

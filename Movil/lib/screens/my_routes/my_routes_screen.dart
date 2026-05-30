@@ -1,3 +1,4 @@
+import 'package:ecoruta/models/guided_saved_route.dart';
 import 'package:ecoruta/models/stored_route.dart';
 import 'package:ecoruta/screens/explore/route_preview_screen.dart';
 import 'package:ecoruta/services/routing/a_star_router.dart';
@@ -198,6 +199,7 @@ class _MyRoutesScreenState extends State<MyRoutesScreen> {
           startLabel: route.startLabel,
           endLabel: route.endLabel,
           enableStartAction: true,
+          guidedRoute: GuidedSavedRoute.fromStoredRoute(route),
         ),
       ),
     );

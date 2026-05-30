@@ -229,9 +229,12 @@ class _GenerateTabState extends State<GenerateTab> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
         SnackBar(
           content: const Text('Ruta guardada en Mis rutas.'),
+          duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'Ver',
             onPressed: () {
