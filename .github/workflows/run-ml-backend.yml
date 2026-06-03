@@ -27,4 +27,4 @@ jobs:
       - name: Ejecutar entrenamiento
         run: |
           cd Movil/ml_backend
-          python train_two_tower.py
+          python train_two_tower.py --train
