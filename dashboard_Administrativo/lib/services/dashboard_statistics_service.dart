@@ -41,22 +41,25 @@ class DashboardStatisticsService {
 
   Future<DashboardStatisticsSnapshot> loadSnapshot() async {
     debugPrint(
-      'DashboardStatisticsService.loadSnapshot: leyendo colecciones users, admins y routes.',
+      'DashboardStatisticsService.loadSnapshot: leyendo colecciones users, admins, sponsors y routes.',
     );
 
     try {
       final results = await Future.wait<QuerySnapshot<Map<String, dynamic>>>([
         _firestore.collection('users').get(),
         _firestore.collection('admins').get(),
+        _firestore.collection('sponsors').get(),
         _firestore.collection('routes').get(),
       ]);
 
       final usersSnapshot = results[0];
       final adminsSnapshot = results[1];
-      final routesSnapshot = results[2];
+      final sponsorsSnapshot = results[2];
+      final routesSnapshot = results[3];
 
       final totalClients = usersSnapshot.docs.length;
       final totalAdmins = adminsSnapshot.docs.length;
+      final totalSponsors = sponsorsSnapshot.docs.length;
       final publicRoutes = routesSnapshot.docs
           .where((doc) => _isPublicRoute(doc.data()))
           .toList();
@@ -65,28 +68,28 @@ class DashboardStatisticsService {
       final activityCounts = _buildActivityCounts(publicRoutes);
       final topActivity = _topActivity(activityCounts);
       final latestRouteName = _latestRouteName(publicRoutes);
-      final latestUserName = _latestDocumentName(
-        usersSnapshot.docs,
-        const ['fullName', 'name'],
-      );
-      final latestAdminName = _latestDocumentName(
-        adminsSnapshot.docs,
-        const ['fullName', 'name'],
-      );
-      final monthlyTrend = _buildMonthlyTrend(
-        routes: routesSnapshot.docs,
-      );
+      final latestUserName = _latestDocumentName(usersSnapshot.docs, const [
+        'fullName',
+        'name',
+      ]);
+      final latestAdminName = _latestDocumentName(adminsSnapshot.docs, const [
+        'fullName',
+        'name',
+      ]);
+      final monthlyTrend = _buildMonthlyTrend(routes: routesSnapshot.docs);
 
       debugPrint(
-        'DashboardStatisticsService.loadSnapshot: totals -> users=$totalClients, admins=$totalAdmins, publicRoutes=$totalPublicRoutes, allRoutes=${routesSnapshot.docs.length}',
+        'DashboardStatisticsService.loadSnapshot: totals -> sponsors=$totalSponsors, users=$totalClients, admins=$totalAdmins, publicRoutes=$totalPublicRoutes, allRoutes=${routesSnapshot.docs.length}',
       );
 
       return DashboardStatisticsSnapshot(
         metrics: [
           DashboardMetricData(
             title: 'Total de patrocinadores',
-            value: '0',
-            changeLabel: 'Sin colección disponible',
+            value: '$totalSponsors',
+            changeLabel: totalSponsors > 0
+                ? 'Coleccion sponsors'
+                : 'Sin patrocinadores registrados',
             icon: Icons.handshake_outlined,
             accentColor: dashboardSoftGreen,
           ),
@@ -95,7 +98,7 @@ class DashboardStatisticsService {
             value: '$totalClients',
             changeLabel: latestUserName != null
                 ? 'Ultimo visible: $latestUserName'
-                : 'Colección users',
+                : 'Coleccion users',
             icon: Icons.groups_2_outlined,
             accentColor: dashboardBrandGreen,
           ),
@@ -104,31 +107,31 @@ class DashboardStatisticsService {
             value: '$totalAdmins',
             changeLabel: latestAdminName != null
                 ? 'Ultimo visible: $latestAdminName'
-                : 'Colección admins',
+                : 'Coleccion admins',
             icon: Icons.admin_panel_settings_outlined,
             accentColor: dashboardSupportGreen,
           ),
           DashboardMetricData(
             title: 'Publicidades activas',
             value: '0',
-            changeLabel: 'Sin colección disponible',
+            changeLabel: 'Sin coleccion disponible',
             icon: Icons.campaign_outlined,
             accentColor: dashboardAccentOrange,
           ),
           DashboardMetricData(
-            title: 'Rutas públicas',
+            title: 'Rutas publicas',
             value: '$totalPublicRoutes',
             changeLabel: latestRouteName != null
                 ? 'Ultima visible: $latestRouteName'
-                : 'Colección routes',
+                : 'Coleccion routes',
             icon: Icons.route_outlined,
             accentColor: dashboardSoftGreen,
           ),
         ],
         barData: [
-          const DashboardBarDatum(
+          DashboardBarDatum(
             label: 'Patroc.',
-            value: 0,
+            value: totalSponsors.toDouble(),
             color: dashboardBrandGreen,
           ),
           DashboardBarDatum(
@@ -162,11 +165,11 @@ class DashboardStatisticsService {
             color: dashboardSoftGreen,
           ),
           DashboardStatisticsHighlight(
-            title: 'Ruta pública mas reciente',
+            title: 'Ruta publica mas reciente',
             value: latestRouteName ?? 'Sin nombre visible',
             badge: totalPublicRoutes > 0
-                ? '$totalPublicRoutes rutas públicas'
-                : 'Sin rutas públicas',
+                ? '$totalPublicRoutes rutas publicas'
+                : 'Sin rutas publicas',
             color: dashboardAccentOrange,
           ),
           DashboardStatisticsHighlight(
@@ -211,9 +214,7 @@ class DashboardStatisticsService {
 
     if (visibility is String) {
       final normalized = visibility.trim().toLowerCase();
-      return normalized == 'public' ||
-          normalized == 'pública' ||
-          normalized == 'p\u00fablica';
+      return normalized == 'public' || normalized == 'publica';
     }
 
     return false;
@@ -222,11 +223,7 @@ class DashboardStatisticsService {
   Map<String, int> _buildActivityCounts(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> routes,
   ) {
-    final counts = <String, int>{
-      'Senderismo': 0,
-      'Ciclismo': 0,
-      'Running': 0,
-    };
+    final counts = <String, int>{'Senderismo': 0, 'Ciclismo': 0, 'Running': 0};
 
     for (final route in routes) {
       final rawActivity = _readRouteActivity(route.data());
@@ -234,34 +231,33 @@ class DashboardStatisticsService {
       debugPrint(
         'DashboardStatisticsService._buildActivityCounts: route=${route.id} rawActivity=$rawActivity normalized=$activity',
       );
-      counts.update(activity, (value) => value + 1);
+      counts.update(activity, (value) => value + 1, ifAbsent: () => 1);
     }
 
     return counts;
   }
 
   String? _readRouteActivity(Map<String, dynamic> data) {
-    final directValue = _readFirstString(
-      data,
-      const [
-        'activityProfile',
-        'activityType',
-        'activity',
-        'type',
-        'sport',
-        'category',
-      ],
-    );
+    final directValue = _readFirstString(data, const [
+      'activityProfile',
+      'activityType',
+      'activity',
+      'type',
+      'sport',
+      'category',
+    ]);
     if (directValue != null) {
       return directValue;
     }
 
     final activityProfile = data['activityProfile'];
     if (activityProfile is Map<String, dynamic>) {
-      return _readFirstString(
-        activityProfile,
-        const ['label', 'name', 'type', 'value'],
-      );
+      return _readFirstString(activityProfile, const [
+        'label',
+        'name',
+        'type',
+        'value',
+      ]);
     }
 
     return null;
@@ -337,10 +333,11 @@ class DashboardStatisticsService {
     final sorted = [...publicRoutes]
       ..sort((a, b) => _compareByCreatedAt(a.data(), b.data()));
 
-    return _readFirstString(
-      sorted.first.data(),
-      const ['title', 'name', 'routeName'],
-    );
+    return _readFirstString(sorted.first.data(), const [
+      'title',
+      'name',
+      'routeName',
+    ]);
   }
 
   String? _latestDocumentName(
@@ -482,14 +479,14 @@ class DashboardStatisticsService {
     }
 
     if (totalPublicRoutes >= totalClients && totalPublicRoutes > 0) {
-      return 'El inventario de rutas públicas ya compite con el volumen de clientes visibles.';
+      return 'El inventario de rutas publicas ya compite con el volumen de clientes visibles.';
     }
 
     if (totalClients > totalPublicRoutes) {
-      return 'La base de clientes supera el catalogo actual de rutas públicas.';
+      return 'La base de clientes supera el catalogo actual de rutas publicas.';
     }
 
-    return 'La operación muestra distribución estable entre cuentas y rutas visibles.';
+    return 'La operacion muestra distribucion estable entre cuentas y rutas visibles.';
   }
 
   String _buildOperationalBadge({

@@ -1,9 +1,12 @@
+import 'dart:math' as math;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+
+import '../shared/sponsor_map_canvas.dart';
 
 bool _isDarkMode(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -20,6 +23,37 @@ Color _panelSurface(BuildContext context) =>
 Color _panelBorder(BuildContext context) =>
     _isDarkMode(context) ? const Color(0xFF1B4332) : const Color(0xFFE7E8E9);
 
+Future<LatLng?> showSponsorLocationPickerDialog(
+  BuildContext context, {
+  double? initialLatitude,
+  double? initialLongitude,
+}) {
+  final screenSize = MediaQuery.sizeOf(context);
+  final inset = screenSize.width < 960 ? 12.0 : 28.0;
+  final dialogWidth = math.min(screenSize.width - (inset * 2), 1180.0);
+  final dialogHeight = math.min(screenSize.height - (inset * 2), 820.0);
+
+  return showDialog<LatLng>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => Dialog(
+      insetPadding: EdgeInsets.all(inset),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
+        child: SponsorLocationPickerView(
+          initialLatitude: initialLatitude,
+          initialLongitude: initialLongitude,
+          mode: SponsorLocationPickerMode.dialog,
+        ),
+      ),
+    ),
+  );
+}
+
+enum SponsorLocationPickerMode { page, dialog, embedded }
+
 class SponsorLocationPickerPage extends StatefulWidget {
   const SponsorLocationPickerPage({
     this.initialLatitude,
@@ -35,10 +69,40 @@ class SponsorLocationPickerPage extends StatefulWidget {
       _SponsorLocationPickerPageState();
 }
 
+class SponsorLocationPickerView extends StatefulWidget {
+  const SponsorLocationPickerView({
+    this.initialLatitude,
+    this.initialLongitude,
+    this.mode = SponsorLocationPickerMode.page,
+    this.onPointApplied,
+    this.onCloseRequested,
+    super.key,
+  });
+
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final SponsorLocationPickerMode mode;
+  final ValueChanged<LatLng>? onPointApplied;
+  final VoidCallback? onCloseRequested;
+
+  @override
+  State<SponsorLocationPickerView> createState() =>
+      _SponsorLocationPickerViewState();
+}
+
 class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
+  @override
+  Widget build(BuildContext context) => SponsorLocationPickerView(
+    initialLatitude: widget.initialLatitude,
+    initialLongitude: widget.initialLongitude,
+    mode: SponsorLocationPickerMode.page,
+  );
+}
+
+class _SponsorLocationPickerViewState extends State<SponsorLocationPickerView> {
   static const LatLng defaultCenter = LatLng(9.7489, -83.7534);
   final _searchController = TextEditingController();
-  final _mapController = MapController();
+  final MapController _mapController = MapController();
   bool _isSearching = false;
   String? _searchError;
   List<_LocationSearchResult> _results = const [];
@@ -61,43 +125,125 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.all(20),
+      child: _buildResponsiveBody(),
+    );
+
+    if (widget.mode == SponsorLocationPickerMode.dialog) {
+      return ColoredBox(
+        color: _pageBackground(context),
+        child: Column(
+          children: [
+            _PickerHeader(onClose: _handleClose, onApply: _handleApply),
+            Expanded(child: content),
+          ],
+        ),
+      );
+    }
+
+    if (widget.mode == SponsorLocationPickerMode.embedded) {
+      return Container(
+        decoration: BoxDecoration(
+          color: _pageBackground(context),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _panelBorder(context)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            _PickerHeader(
+              compact: true,
+              onClose: _handleClose,
+              onApply: _handleApply,
+            ),
+            Expanded(child: content),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: _pageBackground(context),
-      appBar: AppBar(
-        backgroundColor: _chromeSurface(context),
-        elevation: 0,
-        surfaceTintColor: _chromeSurface(context),
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
-        title: const Text('Seleccionar ubicacion'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(_selectedPoint),
-              icon: const Icon(Icons.check_circle_outline_rounded),
-              label: const Text('Aplicar'),
+      appBar: _PickerHeader(onClose: _handleClose, onApply: _handleApply),
+      body: content,
+    );
+  }
+
+  void _handleApply() {
+    if (widget.onPointApplied != null) {
+      widget.onPointApplied!(_selectedPoint);
+      return;
+    }
+    Navigator.of(context).pop(_selectedPoint);
+  }
+
+  void _handleClose() {
+    if (widget.onCloseRequested != null) {
+      widget.onCloseRequested!();
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
+  Widget _buildResponsiveBody() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 980;
+        if (isCompact) {
+          return Column(
+            children: [
+              _SearchToolbar(
+                controller: _searchController,
+                isSearching: _isSearching,
+                searchError: _searchError,
+                onSearch: _searchLocations,
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _MapPanel(
+                  mapController: _mapController,
+                  selectedPoint: _selectedPoint,
+                  mapCenter: _mapCenter,
+                  onTap: _selectPointFromMap,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 180,
+                child: _ResultsPanel(
+                  results: _results,
+                  onSelect: _selectSearchResult,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _SelectedLocationBar(
+                selectedPoint: _selectedPoint,
+                onReset: _resetSelection,
+              ),
+            ],
+          );
+        }
+        return Column(
+          children: [
+            _SearchToolbar(
+              controller: _searchController,
+              isSearching: _isSearching,
+              searchError: _searchError,
+              onSearch: _searchLocations,
             ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 980;
-            if (isCompact) {
-              return Column(
+            const SizedBox(height: 16),
+            Expanded(
+              child: Row(
                 children: [
-                  _SearchToolbar(
-                    controller: _searchController,
-                    isSearching: _isSearching,
-                    searchError: _searchError,
-                    onSearch: _searchLocations,
+                  SizedBox(
+                    width: 320,
+                    child: _ResultsPanel(
+                      results: _results,
+                      onSelect: _selectSearchResult,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: _MapPanel(
                       mapController: _mapController,
@@ -106,63 +252,17 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
                       onTap: _selectPointFromMap,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 180,
-                    child: _ResultsPanel(
-                      results: _results,
-                      onSelect: _selectSearchResult,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _SelectedLocationBar(
-                    selectedPoint: _selectedPoint,
-                    onReset: _resetSelection,
-                  ),
                 ],
-              );
-            }
-            return Column(
-              children: [
-                _SearchToolbar(
-                  controller: _searchController,
-                  isSearching: _isSearching,
-                  searchError: _searchError,
-                  onSearch: _searchLocations,
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 320,
-                        child: _ResultsPanel(
-                          results: _results,
-                          onSelect: _selectSearchResult,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _MapPanel(
-                          mapController: _mapController,
-                          selectedPoint: _selectedPoint,
-                          mapCenter: _mapCenter,
-                          onTap: _selectPointFromMap,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _SelectedLocationBar(
-                  selectedPoint: _selectedPoint,
-                  onReset: _resetSelection,
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _SelectedLocationBar(
+              selectedPoint: _selectedPoint,
+              onReset: _resetSelection,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -245,6 +345,56 @@ class _SponsorLocationPickerPageState extends State<SponsorLocationPickerPage> {
       _mapCenter = point;
     });
     _mapController.move(point, 16);
+  }
+}
+
+class _PickerHeader extends StatelessWidget implements PreferredSizeWidget {
+  const _PickerHeader({
+    required this.onClose,
+    required this.onApply,
+    this.compact = false,
+  });
+
+  final VoidCallback onClose;
+  final VoidCallback onApply;
+  final bool compact;
+
+  @override
+  Size get preferredSize => Size.fromHeight(compact ? 64 : 76);
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: _chromeSurface(context),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: compact ? 64 : 76,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: onClose,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Seleccionar ubicacion',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: onApply,
+                  icon: const Icon(Icons.check_circle_outline_rounded),
+                  label: const Text('Aplicar'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -372,41 +522,13 @@ class _MapPanel extends StatelessWidget {
   final LatLng selectedPoint;
   final LatLng mapCenter;
   final ValueChanged<LatLng> onTap;
+
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: _panelBorder(context)),
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: mapCenter,
-        initialZoom: 13,
-        onTap: (tapPosition, point) => onTap(point),
-      ),
-      children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.ecoruta.admin.web',
-        ),
-        MarkerLayer(
-          markers: [
-            Marker(
-              width: 54,
-              height: 54,
-              point: selectedPoint,
-              child: const Icon(
-                Icons.location_on_rounded,
-                size: 46,
-                color: Color(0xFFFF7043),
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => SponsorMapCanvas(
+    mapController: mapController,
+    center: mapCenter,
+    selectedPoint: selectedPoint,
+    onTap: onTap,
   );
 }
 

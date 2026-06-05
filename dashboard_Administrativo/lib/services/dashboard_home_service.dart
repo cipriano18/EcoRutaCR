@@ -64,16 +64,18 @@ class DashboardHomeService {
 
   Future<DashboardHomeSnapshot> loadSnapshot() async {
     debugPrint(
-      'DashboardHomeService.loadSnapshot: leyendo colecciones users, admins y routes.',
+      'DashboardHomeService.loadSnapshot: leyendo colecciones users, admins, sponsors y routes.',
     );
 
     final usersCollection = _firestore.collection('users');
     final adminsCollection = _firestore.collection('admins');
+    final sponsorsCollection = _firestore.collection('sponsors');
     final routesCollection = _firestore.collection('routes');
 
     try {
       final totalClientsFuture = usersCollection.count().get();
       final totalAdminsFuture = adminsCollection.count().get();
+      final totalSponsorsFuture = sponsorsCollection.count().get();
       final recentUsersFuture = _loadRecentDocuments(usersCollection, 'users');
       final recentAdminsFuture = _loadRecentDocuments(adminsCollection, 'admins');
       final routesFuture = routesCollection.get();
@@ -82,6 +84,7 @@ class DashboardHomeService {
       final results = await Future.wait([
         totalClientsFuture,
         totalAdminsFuture,
+        totalSponsorsFuture,
         recentUsersFuture,
         recentAdminsFuture,
         routesFuture,
@@ -90,13 +93,14 @@ class DashboardHomeService {
 
       final totalClients = (results[0] as AggregateQuerySnapshot).count ?? 0;
       final totalAdmins = (results[1] as AggregateQuerySnapshot).count ?? 0;
+      final totalSponsors = (results[2] as AggregateQuerySnapshot).count ?? 0;
       final recentUsers =
-          results[2] as List<QueryDocumentSnapshot<Map<String, dynamic>>>;
-      final recentAdmins =
           results[3] as List<QueryDocumentSnapshot<Map<String, dynamic>>>;
-      final routesSnapshot = results[4] as QuerySnapshot<Map<String, dynamic>>;
+      final recentAdmins =
+          results[4] as List<QueryDocumentSnapshot<Map<String, dynamic>>>;
+      final routesSnapshot = results[5] as QuerySnapshot<Map<String, dynamic>>;
       final recentRoutes =
-          results[5] as List<QueryDocumentSnapshot<Map<String, dynamic>>>;
+          results[6] as List<QueryDocumentSnapshot<Map<String, dynamic>>>;
 
       final totalPublicRoutes = routesSnapshot.docs
           .where((doc) => _isPublicRoute(doc.data()))
@@ -151,7 +155,7 @@ class DashboardHomeService {
       );
 
       return DashboardHomeSnapshot(
-        totalSponsors: 0,
+        totalSponsors: totalSponsors,
         totalClients: totalClients,
         totalAdmins: totalAdmins,
         totalAds: 0,

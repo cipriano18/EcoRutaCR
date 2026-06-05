@@ -8,6 +8,8 @@ import 'providers/admin_session_provider.dart';
 import 'providers/theme_mode_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/admin_auth_service.dart';
+import 'services/advertisement_service.dart';
+import 'services/sponsor_service.dart';
 import 'theme/app_theme.dart';
 import 'services/admin_service.dart';
 
@@ -41,6 +43,10 @@ class EcoRutaAdminApp extends StatelessWidget {
         Provider(create: (_) => AdminService()),
 
         Provider(create: (_) => ClientService()),
+
+        Provider(create: (_) => SponsorService()),
+
+        Provider(create: (_) => AdvertisementService()),
 
         ChangeNotifierProvider(create: (_) => ThemeModeProvider()),
       ],

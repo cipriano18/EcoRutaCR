@@ -7,6 +7,7 @@ import '../../services/admin_auth_service.dart';
 import '../../widgets/admin/admin_list_module.dart';
 import '../../widgets/admin/current_admin_profile_dialog.dart';
 import '../../widgets/clients/client_list_module.dart';
+import '../../widgets/sponsors/ads/advertisement_registration_module.dart';
 import '../../widgets/sponsors/dashboard/sponsor_management_panels.dart';
 import 'home/dashboard_home_section.dart';
 import 'public_routes/public_routes_management_section.dart';
@@ -50,10 +51,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
     const _AdminSection(
       id: statisticsSectionId,
-      title: 'Estadísticas',
+      title: 'Estadisticas',
       icon: Icons.bar_chart_rounded,
       summary:
-          'Vista analítica con gráficos administrativos y comparativos operativos del sistema.',
+          'Vista analitica con graficos administrativos y comparativos operativos del sistema.',
     ),
     const _AdminSection(
       id: reportsSectionId,
@@ -66,14 +67,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: reportUsersSubsectionId,
           title: 'Reporte de usuarios',
           description:
-              'Seguimiento de usuarios registrados, activos, crecimiento y últimos movimientos.',
+              'Seguimiento de usuarios registrados, activos, crecimiento y ultimos movimientos.',
           icon: Icons.people_alt_outlined,
         ),
         _AdminSubsection(
           id: reportSponsorsSubsectionId,
           title: 'Reporte de patrocinadores',
           description:
-              'Vista comercial de patrocinadores activos, categorías y campañas vigentes.',
+              'Vista comercial de patrocinadores activos, categorias y campanas vigentes.',
           icon: Icons.handshake_outlined,
         ),
         _AdminSubsection(
@@ -85,26 +86,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         _AdminSubsection(
           id: reportRoutesSubsectionId,
-          title: 'Reporte de rutas públicas',
+          title: 'Reporte de rutas publicas',
           description:
-              'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geográfica.',
+              'Seguimiento institucional de rutas, zonas mas utilizadas y actividad geografica.',
           icon: Icons.route_outlined,
         ),
       ],
     ),
     const _AdminSection(
       id: publicRoutesManagementSectionId,
-      title: 'Manejo de rutas públicas',
+      title: 'Manejo de rutas publicas',
       icon: Icons.alt_route_rounded,
       summary:
-          'Administración visual de rutas públicas creadas desde la app móvil con filtros, edición simple y eliminación controlada.',
+          'Administracion visual de rutas publicas creadas desde la app movil con filtros, edicion simple y eliminacion controlada.',
     ),
     const _AdminSection(
       id: sponsorsSectionId,
       title: 'Manejo de patrocinadores',
       icon: Icons.handshake_outlined,
       summary:
-          'Registra aliados, administra publicidades y prepara los puntos donde aparecerán sus anuncios.',
+          'Registra aliados, administra publicidades y prepara los puntos donde apareceran sus anuncios.',
       subsections: [
         _AdminSubsection(
           id: sponsorRegisterSubsectionId,
@@ -117,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           id: sponsorAdsSubsectionId,
           title: 'Registrar publicidades',
           description:
-              'Gestión de materiales visuales, copys y anuncios activos por patrocinador.',
+              'Gestion de materiales visuales, copys y anuncios activos por patrocinador.',
           icon: Icons.campaign_outlined,
         ),
         _AdminSubsection(
@@ -339,7 +340,7 @@ class _DashboardHeader extends StatelessWidget {
             onPressed: () async {
               await onLogout();
             },
-            tooltip: 'Cerrar sesión',
+            tooltip: 'Cerrar sesion',
             icon: Icon(
               Icons.logout_rounded,
               color: isDark ? const Color(0xFFE8F3EE) : const Color(0xFF012D1D),
@@ -445,7 +446,7 @@ class _SidebarCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Navegación del panel',
+            'Navegacion del panel',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -673,6 +674,9 @@ class _DashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayTitle = _resolveDisplayTitle();
+    final displayDescription = _resolveDisplayDescription();
+
     if (section.id == _DashboardScreenState.homeSectionId) {
       return const DashboardHomeSection();
     }
@@ -697,14 +701,14 @@ class _DashboardContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            section.title,
+            displayTitle,
             style: Theme.of(
               context,
             ).textTheme.headlineLarge?.copyWith(fontSize: 30),
           ),
           const SizedBox(height: 10),
           Text(
-            subsection?.description ?? section.summary,
+            displayDescription,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 24),
@@ -712,6 +716,29 @@ class _DashboardContent extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _resolveDisplayTitle() {
+    if (section.id == _DashboardScreenState.sponsorsSectionId &&
+        subsection?.id == _DashboardScreenState.sponsorRegisterSubsectionId) {
+      return 'Registro de patrocinador';
+    }
+
+    if (section.id == _DashboardScreenState.sponsorsSectionId &&
+        subsection?.id == _DashboardScreenState.sponsorAdsSubsectionId) {
+      return 'Mapa y configuracion de publicidades';
+    }
+
+    return section.title;
+  }
+
+  String _resolveDisplayDescription() {
+    if (section.id == _DashboardScreenState.sponsorsSectionId &&
+        subsection?.id == _DashboardScreenState.sponsorRegisterSubsectionId) {
+      return 'Completa los datos principales.';
+    }
+
+    return subsection?.description ?? section.summary;
   }
 
   Widget _buildSectionBody(BuildContext context) {
@@ -729,7 +756,7 @@ class _DashboardContent extends StatelessWidget {
 
     return const SponsorModulePlaceholder(
       title: 'Modulo no disponible',
-      description: 'Esta sección todavía no tiene contenido asignado.',
+      description: 'Esta seccion todavia no tiene contenido asignado.',
       accentColor: Color(0xFFFF7043),
       bullets: ['Contenido pendiente'],
     );
@@ -775,17 +802,7 @@ class _SponsorsModule extends StatelessWidget {
     final currentId = subsection?.id;
 
     if (currentId == _DashboardScreenState.sponsorAdsSubsectionId) {
-      return const SponsorModulePlaceholder(
-        title: 'Registrar publicidades',
-        description:
-            'Prepara la carga de campañas, piezas y mensajes que se mostraran dentro del ecosistema EcoRuta.',
-        accentColor: Color(0xFFFF7043),
-        bullets: [
-          'Asociar publicidad a un patrocinador',
-          'Definir vigencia o estado de públicación',
-          'Preparar assets y copys por anuncio',
-        ],
-      );
+      return const AdvertisementRegistrationModule();
     }
 
     if (currentId == _DashboardScreenState.sponsorMapSubsectionId) {

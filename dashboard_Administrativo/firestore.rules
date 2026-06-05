@@ -5,6 +5,23 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isBootstrapAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email is string &&
+        (
+          request.auth.token.email == 'admin@ecoruta.com' ||
+          request.auth.token.email == 'admin.20260530@ecorutacr.com'
+        );
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        (
+          exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+          isBootstrapAdminEmail()
+        );
+    }
+
     function isUserOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
@@ -134,6 +151,190 @@ service cloud.firestore {
         isValidPreview(data.preview);
     }
 
+    function hasOnlySponsorFields(data) {
+      return data.keys().hasOnly([
+        'id',
+        'name',
+        'logoUrl',
+        'type',
+        'contactEmail',
+        'phone',
+        'startDate',
+        'endDate',
+        'status',
+        'amountContributed',
+        'paymentType',
+        'isPhysicalBusiness',
+        'latitude',
+        'longitude',
+        'category',
+        'description',
+        'externalLink',
+        'priority',
+        'advertisementIds',
+        'createdByAdminId',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function hasRequiredSponsorFields(data) {
+      return data.keys().hasAll([
+        'id',
+        'name',
+        'logoUrl',
+        'type',
+        'contactEmail',
+        'phone',
+        'startDate',
+        'endDate',
+        'status',
+        'paymentType',
+        'category',
+        'description'
+      ]);
+    }
+
+    function isValidSponsorPayload(data, sponsorId) {
+      return hasOnlySponsorFields(data) &&
+        hasRequiredSponsorFields(data) &&
+        data.id is string &&
+        data.id == sponsorId &&
+        data.name is string &&
+        data.name.size() > 0 &&
+        data.name.size() <= 120 &&
+        data.logoUrl is string &&
+        data.logoUrl.size() > 0 &&
+        data.contactEmail is string &&
+        data.contactEmail.size() > 0 &&
+        data.phone is string &&
+        data.phone.size() > 0 &&
+        data.type is string &&
+        data.type.size() > 0 &&
+        data.status is string &&
+        data.status.size() > 0 &&
+        data.paymentType is string &&
+        data.paymentType.size() > 0 &&
+        data.category is string &&
+        data.category.size() > 0 &&
+        data.description is string &&
+        data.description.size() >= 20 &&
+        data.startDate is timestamp &&
+        data.endDate is timestamp &&
+        data.endDate >= data.startDate &&
+        (!(data.keys().hasAny(['isPhysicalBusiness'])) || data.isPhysicalBusiness is bool) &&
+        (!(data.keys().hasAny(['advertisementIds'])) || data.advertisementIds is list) &&
+        (!(data.keys().hasAny(['createdByAdminId'])) || (
+          data.createdByAdminId is string &&
+          data.createdByAdminId == request.auth.uid
+        )) &&
+        (!(data.keys().hasAny(['createdAt'])) || data.createdAt is timestamp) &&
+        (!(data.keys().hasAny(['updatedAt'])) || data.updatedAt is timestamp) &&
+        (!(data.keys().hasAny(['amountContributed'])) || data.amountContributed == null || data.amountContributed is number) &&
+        (!(data.keys().hasAny(['latitude'])) || data.latitude == null || data.latitude is number) &&
+        (!(data.keys().hasAny(['longitude'])) || data.longitude == null || data.longitude is number) &&
+        (!(data.keys().hasAny(['externalLink'])) || data.externalLink == null || data.externalLink is string) &&
+        (!(data.keys().hasAny(['priority'])) || data.priority == null || data.priority is int);
+    }
+
+    function hasOnlyAdvertisementFields(data) {
+      return data.keys().hasOnly([
+        'id',
+        'type',
+        'sponsorId',
+        'sponsorName',
+        'sponsorLogoUrl',
+        'sponsorExternalLink',
+        'status',
+        'imageUrl',
+        'description',
+        'startDate',
+        'endDate',
+        'openingTime',
+        'closingTime',
+        'latitude',
+        'longitude',
+        'totalClicks',
+        'createdByAdminId',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function hasRequiredAdvertisementFields(data) {
+      return data.keys().hasAll([
+        'id',
+        'type',
+        'sponsorId',
+        'sponsorName',
+        'sponsorLogoUrl',
+        'status',
+        'imageUrl',
+        'description',
+        'totalClicks',
+        'createdByAdminId',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function isValidAdvertisementStatus(value) {
+      return value == 'Activo' || value == 'Inactivo';
+    }
+
+    function isValidAdvertisementType(value) {
+      return value == 'anuncio' || value == 'local';
+    }
+
+    function isValidTimeLabel(value) {
+      return value is string &&
+        value.matches('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+    }
+
+    function isValidAdvertisementPayload(data, advertisementId) {
+      return hasOnlyAdvertisementFields(data) &&
+        hasRequiredAdvertisementFields(data) &&
+        data.id is string &&
+        data.id == advertisementId &&
+        isValidAdvertisementType(data.type) &&
+        data.sponsorId is string &&
+        data.sponsorId.size() > 0 &&
+        data.sponsorName is string &&
+        data.sponsorName.size() > 0 &&
+        data.sponsorLogoUrl is string &&
+        data.sponsorLogoUrl.size() > 0 &&
+        isValidAdvertisementStatus(data.status) &&
+        data.imageUrl is string &&
+        data.imageUrl.size() > 0 &&
+        data.description is string &&
+        data.description.size() >= 12 &&
+        data.totalClicks is int &&
+        data.totalClicks >= 0 &&
+        data.createdByAdminId is string &&
+        data.createdByAdminId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp &&
+        (!(data.keys().hasAny(['sponsorExternalLink'])) || data.sponsorExternalLink == null || data.sponsorExternalLink is string) &&
+        (
+          data.type == 'anuncio'
+            ? data.startDate is timestamp &&
+              data.endDate is timestamp &&
+              data.endDate >= data.startDate &&
+              (!(data.keys().hasAny(['openingTime'])) || data.openingTime == null) &&
+              (!(data.keys().hasAny(['closingTime'])) || data.closingTime == null) &&
+              (!(data.keys().hasAny(['latitude'])) || data.latitude == null) &&
+              (!(data.keys().hasAny(['longitude'])) || data.longitude == null)
+            : data.startDate is timestamp &&
+              data.endDate is timestamp &&
+              data.endDate >= data.startDate &&
+              data.latitude is number &&
+              data.longitude is number &&
+              isValidTimeLabel(data.openingTime) &&
+              isValidTimeLabel(data.closingTime) &&
+              data.closingTime > data.openingTime
+        );
+    }
+
     match /users/{userId} {
       allow create: if isUserOwner(userId);
       allow read, update, delete: if isUserOwner(userId);
@@ -169,6 +370,38 @@ service cloud.firestore {
         isValidRoutePayload(request.resource.data);
 
       allow delete: if isRouteOwner();
+    }
+
+    match /sponsors/{sponsorId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() &&
+        isValidSponsorPayload(request.resource.data, sponsorId);
+      allow update: if isAdmin() &&
+        request.resource.data.id == resource.data.id &&
+        (
+          !request.resource.data.keys().hasAny(['createdByAdminId']) ||
+          !resource.data.keys().hasAny(['createdByAdminId']) ||
+          request.resource.data.createdByAdminId == resource.data.createdByAdminId
+        ) &&
+        (
+          !request.resource.data.keys().hasAny(['createdAt']) ||
+          !resource.data.keys().hasAny(['createdAt']) ||
+          request.resource.data.createdAt == resource.data.createdAt
+        ) &&
+        isValidSponsorPayload(request.resource.data, sponsorId);
+      allow delete: if isAdmin();
+    }
+
+    match /advertisements/{advertisementId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() &&
+        isValidAdvertisementPayload(request.resource.data, advertisementId);
+      allow update: if isAdmin() &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.createdByAdminId == resource.data.createdByAdminId &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        isValidAdvertisementPayload(request.resource.data, advertisementId);
+      allow delete: if isAdmin();
     }
   }
 }

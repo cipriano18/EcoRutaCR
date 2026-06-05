@@ -3,6 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/admin_model.dart';
 
+const _bootstrapAdminProfiles = {
+  'admin@ecoruta.com': (name: 'Administrador General', role: 'super_admin'),
+  'admin.20260530@ecorutacr.com': (
+    name: 'Administrador EcoRuta',
+    role: 'admin',
+  ),
+};
+
 class AdminAuthService {
   AdminAuthService({FirebaseAuth? auth, FirebaseFirestore? firestore})
     : _auth = auth ?? FirebaseAuth.instance,
@@ -34,11 +42,14 @@ class AdminAuthService {
 
     final adminDoc = await _firestore.collection('admins').doc(user.uid).get();
     if (!adminDoc.exists) {
-      await _auth.signOut();
-      throw FirebaseAuthException(
-        code: 'admin-not-found',
-        message: 'La cuenta no tiene permisos administrativos.',
-      );
+      final bootstrapProfile = _bootstrapProfileFor(user.email);
+      if (bootstrapProfile == null) {
+        await _auth.signOut();
+        throw FirebaseAuthException(
+          code: 'admin-not-found',
+          message: 'La cuenta no tiene permisos administrativos.',
+        );
+      }
     }
 
     return credential;
@@ -81,7 +92,7 @@ class AdminAuthService {
 
     final doc = await _firestore.collection('admins').doc(user.uid).get();
     if (!doc.exists || doc.data() == null) {
-      return null;
+      return _buildBootstrapAdmin(user);
     }
 
     return AdminModel.fromMap(doc.data()!);
@@ -102,5 +113,25 @@ class AdminAuthService {
       'role': role,
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  AdminModel? _buildBootstrapAdmin(User user) {
+    final bootstrapProfile = _bootstrapProfileFor(user.email);
+    if (bootstrapProfile == null || user.email == null) {
+      return null;
+    }
+
+    return AdminModel(
+      uid: user.uid,
+      name: bootstrapProfile.name,
+      email: user.email!,
+      role: bootstrapProfile.role,
+      createdAt: null,
+    );
+  }
+
+  ({String name, String role})? _bootstrapProfileFor(String? email) {
+    if (email == null) return null;
+    return _bootstrapAdminProfiles[email.trim().toLowerCase()];
   }
 }

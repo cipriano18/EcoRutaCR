@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../../../models/sponsor_model.dart';
-import 'sponsor_location_picker_page.dart';
 
 bool _isDarkMode(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -32,7 +30,7 @@ Color _dateFieldText(BuildContext context, bool hasValue) {
 class SponsorRegistrationForm extends StatefulWidget {
   const SponsorRegistrationForm({required this.onSave, super.key});
 
-  final ValueChanged<Sponsor> onSave;
+  final Future<void> Function(Sponsor sponsor) onSave;
 
   @override
   State<SponsorRegistrationForm> createState() =>
@@ -46,13 +44,10 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _amountController = TextEditingController();
-  final _latitudeController = TextEditingController();
-  final _longitudeController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _externalLinkController = TextEditingController();
   final _priorityController = TextEditingController();
 
-  bool _isPhysicalBusiness = true;
   bool _isSaving = false;
   String? _selectedType;
   String? _selectedStatus;
@@ -86,8 +81,6 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
     _emailController.dispose();
     _phoneController.dispose();
     _amountController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
     _descriptionController.dispose();
     _externalLinkController.dispose();
     _priorityController.dispose();
@@ -111,16 +104,6 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Registrar patrocinadores',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Completa la informacion principal del patrocinador en un flujo vertical, claro y listo para usarse.',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 24),
               _SectionCard(
                 title: 'Datos basicos',
                 subtitle:
@@ -260,30 +243,6 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
                     'Informacion que luego se podra reflejar dentro de EcoRutaCR.',
                 child: _FormColumn(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'NEGOCIO FISICO',
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
-                        ),
-                        Switch(
-                          value: _isPhysicalBusiness,
-                          onChanged: (value) =>
-                              setState(() => _isPhysicalBusiness = value),
-                          activeThumbColor: const Color(0xFFFF7043),
-                        ),
-                      ],
-                    ),
-                    if (_isPhysicalBusiness)
-                      _CoordinatesFieldGroup(
-                        latitudeController: _latitudeController,
-                        longitudeController: _longitudeController,
-                        onPickFromMap: _pickLocationFromMap,
-                        latitudeValidator: _validateLatitude,
-                        longitudeValidator: _validateLongitude,
-                      ),
                     _FieldBlock(
                       label: 'CATEGORIA',
                       child: DropdownButtonFormField<String>(
@@ -322,30 +281,15 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              _SectionCard(
-                title: 'Ajustes adicionales',
-                subtitle: 'Configuraciones opcionales para orden y prioridad.',
-                child: _FormColumn(
-                  children: [
-                    _FieldBlock(
-                      label: 'PRIORIDAD',
-                      helper: 'Opcional',
-                      child: TextFormField(
-                        controller: _priorityController,
-                        keyboardType: TextInputType.number,
-                        validator: _validatePriority,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 24),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
                   onPressed: _isSaving ? null : _saveSponsor,
-                  child: Text(_isSaving ? 'Guardando...' : 'Guardar'),
+                  child: Text(
+                    _isSaving ? 'Guardando...' : 'Guardar',
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],
@@ -376,13 +320,9 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
           ? null
           : double.tryParse(_amountController.text.trim()),
       paymentType: _selectedPaymentType!,
-      isPhysicalBusiness: _isPhysicalBusiness,
-      latitude: _isPhysicalBusiness
-          ? double.tryParse(_latitudeController.text.trim())
-          : null,
-      longitude: _isPhysicalBusiness
-          ? double.tryParse(_longitudeController.text.trim())
-          : null,
+      isPhysicalBusiness: false,
+      latitude: null,
+      longitude: null,
       category: _selectedCategory!,
       description: _descriptionController.text.trim(),
       externalLink: _externalLinkController.text.trim().isEmpty
@@ -392,27 +332,35 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
           ? null
           : int.tryParse(_priorityController.text.trim()),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    widget.onSave(sponsor);
-    if (!mounted) return;
-    setState(() => _isSaving = false);
+
+    try {
+      await widget.onSave(sponsor);
+      if (!mounted) return;
+      _resetForm();
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
-  Future<void> _pickLocationFromMap() async {
-    final currentLatitude = double.tryParse(_latitudeController.text.trim());
-    final currentLongitude = double.tryParse(_longitudeController.text.trim());
-    final selectedPoint = await Navigator.of(context).push<LatLng>(
-      MaterialPageRoute(
-        builder: (context) => SponsorLocationPickerPage(
-          initialLatitude: currentLatitude,
-          initialLongitude: currentLongitude,
-        ),
-      ),
-    );
-    if (!mounted || selectedPoint == null) return;
+  void _resetForm() {
+    _formKey.currentState?.reset();
+    _nameController.clear();
+    _logoUrlController.clear();
+    _emailController.clear();
+    _phoneController.clear();
+    _amountController.clear();
+    _descriptionController.clear();
+    _externalLinkController.clear();
+    _priorityController.clear();
     setState(() {
-      _latitudeController.text = selectedPoint.latitude.toStringAsFixed(6);
-      _longitudeController.text = selectedPoint.longitude.toStringAsFixed(6);
+      _selectedType = null;
+      _selectedStatus = null;
+      _selectedPaymentType = null;
+      _selectedCategory = null;
+      _startDate = null;
+      _endDate = null;
     });
   }
 
@@ -471,20 +419,6 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
     return null;
   }
 
-  String? _validateLatitude(String? value) => _parseCoordinate(
-    value ?? '',
-    min: -90,
-    max: 90,
-    emptyMessage: 'Ingresa la latitud.',
-  );
-
-  String? _validateLongitude(String? value) => _parseCoordinate(
-    value ?? '',
-    min: -180,
-    max: 180,
-    emptyMessage: 'Ingresa la longitud.',
-  );
-
   String? _validateDescription(String? value) {
     final normalized = (value ?? '').trim();
     if (normalized.isEmpty) return 'Ingresa una descripcion.';
@@ -498,31 +432,6 @@ class _SponsorRegistrationFormState extends State<SponsorRegistrationForm> {
     final uri = Uri.tryParse(normalized);
     if (uri == null || (!uri.hasScheme || !uri.hasAuthority)) {
       return 'Ingresa un link valido.';
-    }
-    return null;
-  }
-
-  String? _validatePriority(String? value) {
-    final normalized = (value ?? '').trim();
-    if (normalized.isEmpty) return null;
-    final parsed = int.tryParse(normalized);
-    if (parsed == null) return 'Ingresa un numero entero.';
-    if (parsed < 0) return 'La prioridad no puede ser negativa.';
-    return null;
-  }
-
-  String? _parseCoordinate(
-    String value, {
-    required double min,
-    required double max,
-    required String emptyMessage,
-  }) {
-    final normalized = value.trim();
-    if (normalized.isEmpty) return emptyMessage;
-    final parsed = double.tryParse(normalized);
-    if (parsed == null) return 'Ingresa un numero valido.';
-    if (parsed < min || parsed > max) {
-      return 'El valor debe estar entre $min y $max.';
     }
     return null;
   }
@@ -561,116 +470,6 @@ class _FieldBlock extends StatelessWidget {
       child,
     ],
   );
-}
-
-class _CoordinatesFieldGroup extends StatelessWidget {
-  const _CoordinatesFieldGroup({
-    required this.latitudeController,
-    required this.longitudeController,
-    required this.onPickFromMap,
-    required this.latitudeValidator,
-    required this.longitudeValidator,
-  });
-  final TextEditingController latitudeController;
-  final TextEditingController longitudeController;
-  final VoidCallback onPickFromMap;
-  final String? Function(String?) latitudeValidator;
-  final String? Function(String?) longitudeValidator;
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 860) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _TwoColumnFields(
-                leftLabel: 'LATITUD',
-                leftChild: TextFormField(
-                  controller: latitudeController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  validator: latitudeValidator,
-                ),
-                rightLabel: 'LONGITUD',
-                rightChild: TextFormField(
-                  controller: longitudeController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  validator: longitudeValidator,
-                ),
-              ),
-              const SizedBox(height: 18),
-              _FieldBlock(
-                label: 'MAPA',
-                child: SizedBox(
-                  height: 56,
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: onPickFromMap,
-                    icon: const Icon(Icons.public_rounded),
-                    label: const Text('Elegir punto en el mapa'),
-                  ),
-                ),
-              ),
-            ],
-          );
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _FieldBlock(
-                label: 'LATITUD',
-                child: TextFormField(
-                  controller: latitudeController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  validator: latitudeValidator,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _FieldBlock(
-                label: 'LONGITUD',
-                child: TextFormField(
-                  controller: longitudeController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  validator: longitudeValidator,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 168,
-              child: _FieldBlock(
-                label: 'MAPA',
-                child: SizedBox(
-                  height: 56,
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: onPickFromMap,
-                    icon: const Icon(Icons.public_rounded),
-                    label: const Text('Elegir punto'),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 class _TwoColumnFields extends StatelessWidget {

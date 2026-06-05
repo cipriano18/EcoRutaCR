@@ -6,11 +6,13 @@ void main() {
   testWidgets('SponsorRegistrationForm renders first step', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: SponsorRegistrationForm(onSave: (_) {})),
+        home: Scaffold(
+          body: SponsorRegistrationForm(onSave: (_) async {}),
+        ),
       ),
     );
 
-    expect(find.text('Registrar patrocinadores'), findsOneWidget);
+    expect(find.text('Datos basicos'), findsOneWidget);
     expect(find.text('Datos basicos'), findsWidgets);
     expect(find.text('Guardar'), findsOneWidget);
   });
