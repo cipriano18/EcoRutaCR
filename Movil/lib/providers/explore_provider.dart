@@ -538,12 +538,33 @@ class ExploreProvider extends ChangeNotifier {
   RouteResult _joinRouteResults(RouteResult a, RouteResult b) {
     final combined = [...a.path, ...b.path.skip(1)];
     final cleanPath = _removePathLoops(combined);
+
+    final cleanDistance = _pathDistanceMeters(cleanPath);
+    final rawDistance = a.totalDistanceMeters + b.totalDistanceMeters;
+    final rawDuration = a.estimatedDurationSeconds + b.estimatedDurationSeconds;
+    final cleanDuration = rawDistance <= 0
+        ? rawDuration
+        : (rawDuration * (cleanDistance / rawDistance)).round();
+
     return RouteResult(
       path: cleanPath,
-      totalDistanceMeters: a.totalDistanceMeters + b.totalDistanceMeters,
-      estimatedDurationSeconds:
-          a.estimatedDurationSeconds + b.estimatedDurationSeconds,
+      totalDistanceMeters: cleanDistance,
+      estimatedDurationSeconds: cleanDuration,
     ).withElevation(cleanPath);
+  }
+
+  /// Suma la distancia real entre nodos consecutivos del camino dado.
+  double _pathDistanceMeters(List<GeoNode> path) {
+    var total = 0.0;
+    for (var i = 0; i < path.length - 1; i++) {
+      total += _distanceBetween(
+        path[i].latitude,
+        path[i].longitude,
+        path[i + 1].latitude,
+        path[i + 1].longitude,
+      );
+    }
+    return total;
   }
 
   /// Indica si dos caminos recorren exactamente la misma secuencia de nodos.
