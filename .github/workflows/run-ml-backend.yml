@@ -24,7 +24,13 @@ jobs:
           cd Movil/ml_backend
           pip install -r requirements.txt
 
+      - name: Crear credenciales Firebase
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase-service-account.json
+
       - name: Ejecutar entrenamiento
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
         run: |
           cd Movil/ml_backend
           python train_two_tower.py --train
