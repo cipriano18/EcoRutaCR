@@ -265,8 +265,16 @@ class ExploreProvider extends ChangeNotifier {
           }
         }
 
+        // Se verifica si las ruta son iguales, para no tomar datos erroneos
+        final shortestResult = rawResults[RoutingPreference.shortest];
+        if (bestChallenging != null &&
+            shortestResult != null &&
+            _samePath(bestChallenging.path, shortestResult.path)) {
+          bestChallenging = shortestResult;
+        }
+
         rawResults[RoutingPreference.mostChallenging] =
-            bestChallenging ?? rawResults[RoutingPreference.shortest];
+            bestChallenging ?? shortestResult;
 
         final hard = rawResults[RoutingPreference.mostChallenging];
         debugPrint('[Desafiante] Mejor ruta vía pico: '
@@ -536,6 +544,15 @@ class ExploreProvider extends ChangeNotifier {
       estimatedDurationSeconds:
           a.estimatedDurationSeconds + b.estimatedDurationSeconds,
     ).withElevation(cleanPath);
+  }
+
+  /// Indica si dos caminos recorren exactamente la misma secuencia de nodos.
+  bool _samePath(List<GeoNode> a, List<GeoNode> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   List<GeoNode> _removePathLoops(List<GeoNode> path) {
