@@ -265,8 +265,16 @@ class ExploreProvider extends ChangeNotifier {
           }
         }
 
+        // Se verifica si las ruta son iguales, para no tomar datos erroneos
+        final shortestResult = rawResults[RoutingPreference.shortest];
+        if (bestChallenging != null &&
+            shortestResult != null &&
+            _samePath(bestChallenging.path, shortestResult.path)) {
+          bestChallenging = shortestResult;
+        }
+
         rawResults[RoutingPreference.mostChallenging] =
-            bestChallenging ?? rawResults[RoutingPreference.shortest];
+            bestChallenging ?? shortestResult;
 
         final hard = rawResults[RoutingPreference.mostChallenging];
         debugPrint('[Desafiante] Mejor ruta vía pico: '
@@ -530,12 +538,42 @@ class ExploreProvider extends ChangeNotifier {
   RouteResult _joinRouteResults(RouteResult a, RouteResult b) {
     final combined = [...a.path, ...b.path.skip(1)];
     final cleanPath = _removePathLoops(combined);
+
+    final cleanDistance = _pathDistanceMeters(cleanPath);
+    final rawDistance = a.totalDistanceMeters + b.totalDistanceMeters;
+    final rawDuration = a.estimatedDurationSeconds + b.estimatedDurationSeconds;
+    final cleanDuration = rawDistance <= 0
+        ? rawDuration
+        : (rawDuration * (cleanDistance / rawDistance)).round();
+
     return RouteResult(
       path: cleanPath,
-      totalDistanceMeters: a.totalDistanceMeters + b.totalDistanceMeters,
-      estimatedDurationSeconds:
-          a.estimatedDurationSeconds + b.estimatedDurationSeconds,
+      totalDistanceMeters: cleanDistance,
+      estimatedDurationSeconds: cleanDuration,
     ).withElevation(cleanPath);
+  }
+
+  /// Suma la distancia real entre nodos consecutivos del camino dado.
+  double _pathDistanceMeters(List<GeoNode> path) {
+    var total = 0.0;
+    for (var i = 0; i < path.length - 1; i++) {
+      total += _distanceBetween(
+        path[i].latitude,
+        path[i].longitude,
+        path[i + 1].latitude,
+        path[i + 1].longitude,
+      );
+    }
+    return total;
+  }
+
+  /// Indica si dos caminos recorren exactamente la misma secuencia de nodos.
+  bool _samePath(List<GeoNode> a, List<GeoNode> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
   }
 
   List<GeoNode> _removePathLoops(List<GeoNode> path) {
