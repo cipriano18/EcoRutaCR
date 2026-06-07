@@ -1,10 +1,10 @@
 EcoRutaCR
 Aplicación móvil desarrollada con Flutter para exploración y recomendación de rutas ecológicas.
 
-==================================================
+
 ARCHIVO README
 Instrucciones básicas de ejecución
-==================================================
+
 
 1. Requisitos
 
