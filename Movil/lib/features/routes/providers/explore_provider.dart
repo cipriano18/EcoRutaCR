@@ -1,0 +1,780 @@
+import 'dart:math' as math;
+
+import 'package:ecoruta/features/routes/models/geo_edge.dart';
+import 'package:ecoruta/features/routes/models/geo_node.dart';
+import 'package:ecoruta/features/routes/models/route_profile.dart';
+import 'package:ecoruta/features/routes/services/elevation/terrain_tile_service.dart';
+import 'package:ecoruta/features/routes/services/overpass/osm_mapper.dart';
+import 'package:ecoruta/features/routes/services/overpass/overpass_service.dart';
+import 'package:ecoruta/features/routes/services/routing/a_star_router.dart';
+import 'package:ecoruta/features/routes/services/routing/route_result.dart';
+import 'package:flutter/foundation.dart';
+
+/// Agrupa la selección de nodos ancla usada para una ruta candidata.
+class _AnchorSelection {
+  const _AnchorSelection({
+    required this.startNode,
+    required this.endNode,
+    required this.previewRoute,
+    required this.startDistanceMeters,
+    required this.endDistanceMeters,
+  });
+
+  final GeoNode startNode;
+  final GeoNode endNode;
+  final RouteResult previewRoute;
+  final double startDistanceMeters;
+  final double endDistanceMeters;
+}
+
+/// Expone datos de diagnóstico útiles para depurar generación de rutas.
+class RouteDebugInfo {
+  const RouteDebugInfo({
+    required this.requestedStartLat,
+    required this.requestedStartLon,
+    required this.requestedEndLat,
+    required this.requestedEndLon,
+    required this.graphNodeCount,
+    required this.graphEdgeCount,
+    required this.graphWayCount,
+    required this.componentCount,
+    required this.largestComponentNodeCount,
+    required this.startCandidateCount,
+    required this.endCandidateCount,
+    this.selectedStartNode,
+    this.selectedEndNode,
+    this.selectedStartDistanceMeters,
+    this.selectedEndDistanceMeters,
+    this.shortestRouteNodeCount,
+    this.shortestRouteDistanceMeters,
+  });
+
+  final double requestedStartLat;
+  final double requestedStartLon;
+  final double requestedEndLat;
+  final double requestedEndLon;
+  final int graphNodeCount;
+  final int graphEdgeCount;
+  final int graphWayCount;
+  final int componentCount;
+  final int largestComponentNodeCount;
+  final int startCandidateCount;
+  final int endCandidateCount;
+  final GeoNode? selectedStartNode;
+  final GeoNode? selectedEndNode;
+  final double? selectedStartDistanceMeters;
+  final double? selectedEndDistanceMeters;
+  final int? shortestRouteNodeCount;
+  final double? shortestRouteDistanceMeters;
+}
+
+/// Gestiona el estado del grafo, la carga remota y las rutas calculadas.
+class ExploreProvider extends ChangeNotifier {
+  static const double _cyclingExpandedBboxMultiplier = 1.75;
+
+  ExploreProvider({
+    OverpassService? overpassService,
+    OsmMapper? osmMapper,
+    AStarRouter? router,
+    TerrainTileService? terrainTileService,
+  }) : _overpassService = overpassService ?? OverpassService(),
+       _osmMapper = osmMapper ?? const OsmMapper(),
+       _router = router ?? const AStarRouter(),
+       _terrainTileService = terrainTileService ?? TerrainTileService();
+
+  final OverpassService _overpassService;
+  final OsmMapper _osmMapper;
+  final AStarRouter _router;
+  final TerrainTileService _terrainTileService;
+
+  RouteProfile _selectedProfile = RouteProfile.hiking;
+  bool _isLoading = false;
+  String? _errorMessage;
+  List<GeoNode> _nodes = const [];
+  List<GeoEdge> _edges = const [];
+  List<Map<String, dynamic>> _rawWays = const [];
+  Map<String, dynamic>? _lastPayload;
+  Map<RoutingPreference, RouteResult?> _routes = const {};
+  RouteDebugInfo? _debugInfo;
+
+  RouteProfile get selectedProfile => _selectedProfile;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+  List<GeoNode> get nodes => _nodes;
+  List<GeoEdge> get edges => _edges;
+  List<Map<String, dynamic>> get rawWays => _rawWays;
+  Map<String, dynamic>? get lastPayload => _lastPayload;
+  Map<RoutingPreference, RouteResult?> get routes => _routes;
+  RouteDebugInfo? get debugInfo => _debugInfo;
+
+  /// Actualiza el perfil activo y notifica cuando cambia el contexto de búsqueda.
+  void setProfile(RouteProfile profile) {
+    if (_selectedProfile == profile) return;
+    _selectedProfile = profile;
+    notifyListeners();
+  }
+
+  /// Descarga el grafo necesario y calcula rutas entre dos puntos dados.
+  Future<void> generateRoutes({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+    RoutingPreference preference = RoutingPreference.shortest,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+    _routes = const {};
+    _debugInfo = null;
+
+    try {
+      final straightLineDistanceMeters = _distanceBetween(
+        startLat,
+        startLon,
+        endLat,
+        endLon,
+      );
+      final bboxPadding = _bboxPaddingDegrees(
+        startLat: startLat,
+        endLat: endLat,
+        distanceMeters: straightLineDistanceMeters,
+      );
+      final south = math.min(startLat, endLat) - bboxPadding.latitudeDelta;
+      final north = math.max(startLat, endLat) + bboxPadding.latitudeDelta;
+      final west = math.min(startLon, endLon) - bboxPadding.longitudeDelta;
+      final east = math.max(startLon, endLon) + bboxPadding.longitudeDelta;
+
+      // La primera descarga usa un bbox ajustado a la distancia entre puntos.
+      // Para ciclismo se puede ampliar más adelante si el grafo queda cortado.
+      await _loadGraphForBounds(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+      );
+
+      var anchorResult = _selectConnectedAnchors(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+      );
+      final componentStats = _componentStats(_nodes, _edges);
+
+      _debugInfo = RouteDebugInfo(
+        requestedStartLat: startLat,
+        requestedStartLon: startLon,
+        requestedEndLat: endLat,
+        requestedEndLon: endLon,
+        graphNodeCount: _nodes.length,
+        graphEdgeCount: _edges.length,
+        graphWayCount: _rawWays.length,
+        componentCount: componentStats.componentCount,
+        largestComponentNodeCount: componentStats.largestComponentNodeCount,
+        startCandidateCount: anchorResult.startCandidateCount,
+        endCandidateCount: anchorResult.endCandidateCount,
+        selectedStartNode: anchorResult.selection?.startNode,
+        selectedEndNode: anchorResult.selection?.endNode,
+        selectedStartDistanceMeters:
+            anchorResult.selection?.startDistanceMeters,
+        selectedEndDistanceMeters: anchorResult.selection?.endDistanceMeters,
+        shortestRouteNodeCount:
+            anchorResult.selection?.previewRoute.path.length,
+        shortestRouteDistanceMeters:
+            anchorResult.selection?.previewRoute.totalDistanceMeters,
+      );
+
+      if (anchorResult.selection == null) {
+        _errorMessage = 'No se encontraron nodos en el area seleccionada.';
+        notifyListeners();
+        return;
+      }
+
+      final rawResults = <RoutingPreference, RouteResult?>{};
+
+      // Ruta más corta: siempre desde el grafo principal, sin elevación.
+      rawResults[RoutingPreference.shortest] = _router.findRoute(
+        nodes: _nodes,
+        edges: _edges,
+        startId: anchorResult.selection!.startNode.id,
+        goalId: anchorResult.selection!.endNode.id,
+        profile: _selectedProfile,
+        preference: RoutingPreference.shortest,
+      );
+
+      if (_selectedProfile == RouteProfile.cycling &&
+          rawResults[RoutingPreference.shortest] == null) {
+        debugPrint(
+          '[CyclingFallback] No se encontró ruta inicial. Reintentando con '
+          'bounding box ampliado para incluir arterias principales.',
+        );
+
+        await _loadGraphForBounds(
+          south:
+              math.min(startLat, endLat) -
+              (bboxPadding.latitudeDelta * _cyclingExpandedBboxMultiplier),
+          west:
+              math.min(startLon, endLon) -
+              (bboxPadding.longitudeDelta * _cyclingExpandedBboxMultiplier),
+          north:
+              math.max(startLat, endLat) +
+              (bboxPadding.latitudeDelta * _cyclingExpandedBboxMultiplier),
+          east:
+              math.max(startLon, endLon) +
+              (bboxPadding.longitudeDelta * _cyclingExpandedBboxMultiplier),
+        );
+
+        anchorResult = _selectConnectedAnchors(
+          startLat: startLat,
+          startLon: startLon,
+          endLat: endLat,
+          endLon: endLon,
+        );
+
+        if (anchorResult.selection != null) {
+          rawResults[RoutingPreference.shortest] = _router.findRoute(
+            nodes: _nodes,
+            edges: _edges,
+            startId: anchorResult.selection!.startNode.id,
+            goalId: anchorResult.selection!.endNode.id,
+            profile: _selectedProfile,
+            preference: RoutingPreference.shortest,
+          );
+        }
+      }
+
+      if (preference == RoutingPreference.mostChallenging) {
+        _nodes = await _terrainTileService.enrichWithElevation(
+          _nodes,
+          south: south,
+          west: west,
+          north: north,
+          east: east,
+        );
+
+        final withElev = _nodes.where((n) => n.elevation != null).length;
+        debugPrint(
+          '[Desafiante] Elevación: $withElev/${_nodes.length} nodos con datos '
+          '(${(_nodes.isEmpty ? 0 : withElev * 100 ~/ _nodes.length)}%)',
+        );
+
+        final startId = anchorResult.selection!.startNode.id;
+        final endId = anchorResult.selection!.endNode.id;
+
+        final peakCandidates =
+            _nodes
+                .where(
+                  (n) =>
+                      n.elevation != null && n.id != startId && n.id != endId,
+                )
+                .toList()
+              ..sort((a, b) => b.elevation!.compareTo(a.elevation!));
+
+        RouteResult? bestChallenging;
+        double bestGain = -1;
+
+        // Se prueban picos altos como punto intermedio para inducir mayor
+        // desnivel sin cambiar el destino elegido por el usuario.
+        for (final peak in peakCandidates.take(10)) {
+          final legA = _router.findRoute(
+            nodes: _nodes,
+            edges: _edges,
+            startId: startId,
+            goalId: peak.id,
+            profile: _selectedProfile,
+            preference: RoutingPreference.shortest,
+          );
+          if (legA == null || legA.isEmpty) continue;
+
+          final legB = _router.findRoute(
+            nodes: _nodes,
+            edges: _edges,
+            startId: peak.id,
+            goalId: endId,
+            profile: _selectedProfile,
+            preference: RoutingPreference.shortest,
+          );
+          if (legB == null || legB.isEmpty) continue;
+
+          final combined = _joinRouteResults(legA, legB);
+          if (combined.elevationGainMeters > bestGain) {
+            bestGain = combined.elevationGainMeters;
+            bestChallenging = combined;
+          }
+        }
+
+        // Se verifica si las rutas son iguales para no reportar una variante
+        // desafiante artificialmente distinta.
+        final shortestResult = rawResults[RoutingPreference.shortest];
+        if (bestChallenging != null &&
+            shortestResult != null &&
+            _samePath(bestChallenging.path, shortestResult.path)) {
+          bestChallenging = shortestResult;
+        }
+
+        rawResults[RoutingPreference.mostChallenging] =
+            bestChallenging ?? shortestResult;
+
+        final hard = rawResults[RoutingPreference.mostChallenging];
+        debugPrint(
+          '[Desafiante] Mejor ruta vía pico: '
+          '${hard?.totalDistanceMeters.toStringAsFixed(0)}m, '
+          '${hard?.elevationGainMeters.toStringAsFixed(1)}m subida, '
+          '${hard?.path.length} nodos',
+        );
+      }
+
+      if (rawResults.values.every((result) => result == null)) {
+        _errorMessage = 'No se pudo calcular una ruta entre los puntos.';
+        return;
+      }
+
+      _routes = rawResults;
+    } on OverpassException catch (error) {
+      _errorMessage = error.message;
+    } catch (error) {
+      _errorMessage = 'Error al generar rutas: $error';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Carga rutas manualmente dentro de un bounding box predefinido.
+  Future<void> loadRoutesInBoundingBox({
+    required double south,
+    required double west,
+    required double north,
+    required double east,
+    RouteProfile? profile,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final effectiveProfile = profile ?? _selectedProfile;
+      final payload = await _overpassService.fetchRoutesInBoundingBox(
+        south: south,
+        west: west,
+        north: north,
+        east: east,
+        profile: effectiveProfile,
+      );
+
+      _selectedProfile = effectiveProfile;
+      _applyPayload(payload, effectiveProfile);
+    } on OverpassException catch (error) {
+      _errorMessage = error.message;
+    } catch (error) {
+      _errorMessage = 'No se pudieron cargar rutas desde Overpass: $error';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Carga rutas alrededor de un punto con un radio específico.
+  Future<void> loadRoutesAroundPoint({
+    required double latitude,
+    required double longitude,
+    required int radiusMeters,
+    RouteProfile? profile,
+  }) async {
+    _setLoading(true);
+    _errorMessage = null;
+
+    try {
+      final effectiveProfile = profile ?? _selectedProfile;
+      final payload = await _overpassService.fetchRoutesAroundPoint(
+        latitude: latitude,
+        longitude: longitude,
+        radiusMeters: radiusMeters,
+        profile: effectiveProfile,
+      );
+
+      _selectedProfile = effectiveProfile;
+      _applyPayload(payload, effectiveProfile);
+    } on OverpassException catch (error) {
+      _errorMessage = error.message;
+    } catch (error) {
+      _errorMessage = 'No se pudieron cargar rutas desde Overpass: $error';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Limpia el grafo y los resultados actuales para reiniciar la exploración.
+  void clearData() {
+    _errorMessage = null;
+    _nodes = const [];
+    _edges = const [];
+    _rawWays = const [];
+    _lastPayload = null;
+    _routes = const {};
+    _debugInfo = null;
+    notifyListeners();
+  }
+
+  Future<void> _loadGraphForBounds({
+    required double south,
+    required double west,
+    required double north,
+    required double east,
+  }) async {
+    final payload = await _overpassService.fetchRoutesInBoundingBox(
+      south: south,
+      west: west,
+      north: north,
+      east: east,
+      profile: _selectedProfile,
+    );
+
+    final graph = _osmMapper.mapToGraph(payload, profile: _selectedProfile);
+    _applyGraph(
+      payload: payload,
+      nodes: graph.nodes,
+      edges: graph.edges,
+      rawWays: graph.rawWays,
+      notify: false,
+    );
+
+    _nodes = _router.mainComponentNodes(_nodes, _edges);
+  }
+
+  /// Aplica un payload crudo de Overpass al estado del provider.
+  void _applyPayload(Map<String, dynamic> payload, RouteProfile profile) {
+    final graph = _osmMapper.mapToGraph(payload, profile: profile);
+    _applyGraph(
+      payload: payload,
+      nodes: graph.nodes,
+      edges: graph.edges,
+      rawWays: graph.rawWays,
+    );
+  }
+
+  /// Reemplaza el grafo actual y conserva la respuesta cruda para depuración.
+  void _applyGraph({
+    required Map<String, dynamic> payload,
+    required List<GeoNode> nodes,
+    required List<GeoEdge> edges,
+    required List<Map<String, dynamic>> rawWays,
+    bool notify = true,
+  }) {
+    _lastPayload = payload;
+    _nodes = nodes;
+    _edges = edges;
+    _rawWays = rawWays;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  /// Actualiza el estado de carga y notifica a las vistas.
+  void _setLoading(bool value) {
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  /// Selecciona nodos ancla cercanos que además estén conectados entre sí.
+  _AnchorSelectionResult _selectConnectedAnchors({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+  }) {
+    final startCandidates = _router.nearestNodes(_nodes, startLat, startLon);
+    final endCandidates = _router.nearestNodes(_nodes, endLat, endLon);
+
+    _AnchorSelection? bestSelection;
+    double bestScore = double.infinity;
+
+    for (final limit in const [3, 5, 8]) {
+      // Se empieza con pocos candidatos para favorecer cercanía. Si no hay
+      // conexión, se amplía gradualmente el conjunto probado.
+      final candidateScore = _bestAnchorSelection(
+        startLat: startLat,
+        startLon: startLon,
+        endLat: endLat,
+        endLon: endLon,
+        startCandidates: startCandidates.take(limit).toList(growable: false),
+        endCandidates: endCandidates.take(limit).toList(growable: false),
+        currentBestScore: bestScore,
+      );
+
+      if (candidateScore.selection != null) {
+        bestSelection = candidateScore.selection;
+        bestScore = candidateScore.bestScore;
+        break;
+      }
+    }
+
+    return _AnchorSelectionResult(
+      selection: bestSelection,
+      startCandidateCount: startCandidates.length,
+      endCandidateCount: endCandidates.length,
+    );
+  }
+
+  /// Evalúa combinaciones de candidatos y conserva la ruta conectada más cercana.
+  _AnchorSelectionAttempt _bestAnchorSelection({
+    required double startLat,
+    required double startLon,
+    required double endLat,
+    required double endLon,
+    required List<GeoNode> startCandidates,
+    required List<GeoNode> endCandidates,
+    required double currentBestScore,
+  }) {
+    _AnchorSelection? bestSelection;
+    var bestScore = currentBestScore;
+
+    for (final startCandidate in startCandidates) {
+      final startDistance = _distanceBetween(
+        startLat,
+        startLon,
+        startCandidate.latitude,
+        startCandidate.longitude,
+      );
+
+      for (final endCandidate in endCandidates) {
+        if (startCandidate.id == endCandidate.id) continue;
+
+        final endDistance = _distanceBetween(
+          endLat,
+          endLon,
+          endCandidate.latitude,
+          endCandidate.longitude,
+        );
+        final anchorScore = startDistance + endDistance;
+        if (anchorScore >= bestScore) continue;
+
+        // No basta con cercanía: ambos candidatos deben producir una ruta real
+        // dentro del grafo actual.
+        final previewRoute = _router.findRoute(
+          nodes: _nodes,
+          edges: _edges,
+          startId: startCandidate.id,
+          goalId: endCandidate.id,
+          profile: _selectedProfile,
+          preference: RoutingPreference.shortest,
+        );
+        if (previewRoute == null || previewRoute.isEmpty) continue;
+
+        bestScore = anchorScore;
+        bestSelection = _AnchorSelection(
+          startNode: startCandidate,
+          endNode: endCandidate,
+          previewRoute: previewRoute,
+          startDistanceMeters: startDistance,
+          endDistanceMeters: endDistance,
+        );
+      }
+    }
+
+    return _AnchorSelectionAttempt(
+      selection: bestSelection,
+      bestScore: bestScore,
+    );
+  }
+
+  /// Calcula padding de bbox en grados a partir de una distancia en metros.
+  _BboxPadding _bboxPaddingDegrees({
+    required double startLat,
+    required double endLat,
+    required double distanceMeters,
+  }) {
+    final paddingMeters = math.max(
+      350.0,
+      math.min(3000.0, distanceMeters * 0.18),
+    );
+    final referenceLat = (startLat + endLat) / 2;
+    final latitudeDelta = paddingMeters / 111320.0;
+    final cosLat = math.cos(_degreesToRadians(referenceLat)).abs();
+    // Cerca de latitudes extremas el coseno puede reducir demasiado el divisor.
+    final longitudeDelta = paddingMeters / (111320.0 * math.max(cosLat, 0.2));
+
+    return _BboxPadding(
+      latitudeDelta: latitudeDelta,
+      longitudeDelta: longitudeDelta,
+    );
+  }
+
+  /// Calcula distancia geodésica aproximada en metros con Haversine.
+  double _distanceBetween(double lat1, double lon1, double lat2, double lon2) {
+    const radius = 6371000.0;
+    final dLat = _degreesToRadians(lat2 - lat1);
+    final dLon = _degreesToRadians(lon2 - lon1);
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) *
+            math.cos(_degreesToRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return radius * c;
+  }
+
+  double _degreesToRadians(double degrees) => degrees * math.pi / 180;
+
+  /// Une dos tramos y elimina ciclos que aparezcan por repetir nodos.
+  RouteResult _joinRouteResults(RouteResult a, RouteResult b) {
+    final combined = [...a.path, ...b.path.skip(1)];
+    final cleanPath = _removePathLoops(combined);
+
+    final cleanDistance = _pathDistanceMeters(cleanPath);
+    final rawDistance = a.totalDistanceMeters + b.totalDistanceMeters;
+    final rawDuration = a.estimatedDurationSeconds + b.estimatedDurationSeconds;
+    // La duración se escala con la distancia limpia para compensar ciclos
+    // removidos sin inventar una velocidad nueva.
+    final cleanDuration = rawDistance <= 0
+        ? rawDuration
+        : (rawDuration * (cleanDistance / rawDistance)).round();
+
+    return RouteResult(
+      path: cleanPath,
+      totalDistanceMeters: cleanDistance,
+      estimatedDurationSeconds: cleanDuration,
+    ).withElevation(cleanPath);
+  }
+
+  /// Suma la distancia real entre nodos consecutivos del camino dado.
+  double _pathDistanceMeters(List<GeoNode> path) {
+    var total = 0.0;
+    for (var i = 0; i < path.length - 1; i++) {
+      total += _distanceBetween(
+        path[i].latitude,
+        path[i].longitude,
+        path[i + 1].latitude,
+        path[i + 1].longitude,
+      );
+    }
+    return total;
+  }
+
+  /// Indica si dos caminos recorren exactamente la misma secuencia de nodos.
+  bool _samePath(List<GeoNode> a, List<GeoNode> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id) return false;
+    }
+    return true;
+  }
+
+  List<GeoNode> _removePathLoops(List<GeoNode> path) {
+    final result = <GeoNode>[];
+    final indexById = <int, int>{};
+
+    for (final node in path) {
+      if (indexById.containsKey(node.id)) {
+        final loopStart = indexById[node.id]!;
+        // Cuando un nodo aparece otra vez, el tramo intermedio forma un ciclo
+        // y se elimina para dejar una ruta simple.
+        for (var i = result.length - 1; i > loopStart; i--) {
+          indexById.remove(result[i].id);
+        }
+        result.removeRange(loopStart + 1, result.length);
+      } else {
+        indexById[node.id] = result.length;
+        result.add(node);
+      }
+    }
+
+    return result;
+  }
+}
+
+/// Resultado de buscar anclas conectadas para una ruta.
+class _AnchorSelectionResult {
+  const _AnchorSelectionResult({
+    required this.selection,
+    required this.startCandidateCount,
+    required this.endCandidateCount,
+  });
+
+  final _AnchorSelection? selection;
+  final int startCandidateCount;
+  final int endCandidateCount;
+}
+
+/// Intento individual de selección de anclas.
+class _AnchorSelectionAttempt {
+  const _AnchorSelectionAttempt({
+    required this.selection,
+    required this.bestScore,
+  });
+
+  final _AnchorSelection? selection;
+  final double bestScore;
+}
+
+/// Padding calculado en grados para ampliar un bounding box.
+class _BboxPadding {
+  const _BboxPadding({
+    required this.latitudeDelta,
+    required this.longitudeDelta,
+  });
+
+  final double latitudeDelta;
+  final double longitudeDelta;
+}
+
+/// Estadísticas de conectividad usadas para diagnóstico.
+class _ComponentStats {
+  const _ComponentStats({
+    required this.componentCount,
+    required this.largestComponentNodeCount,
+  });
+
+  final int componentCount;
+  final int largestComponentNodeCount;
+}
+
+/// Extensión privada con utilidades de diagnóstico del grafo.
+extension on ExploreProvider {
+  _ComponentStats _componentStats(List<GeoNode> nodes, List<GeoEdge> edges) {
+    if (nodes.isEmpty) {
+      return const _ComponentStats(
+        componentCount: 0,
+        largestComponentNodeCount: 0,
+      );
+    }
+
+    final adjacency = <int, Set<int>>{};
+    for (final node in nodes) {
+      adjacency[node.id] = <int>{};
+    }
+    for (final edge in edges) {
+      adjacency.putIfAbsent(edge.fromNodeId, () => <int>{}).add(edge.toNodeId);
+      adjacency.putIfAbsent(edge.toNodeId, () => <int>{}).add(edge.fromNodeId);
+    }
+
+    final visited = <int>{};
+    var componentCount = 0;
+    var largestComponentNodeCount = 0;
+
+    for (final node in nodes) {
+      if (visited.contains(node.id)) continue;
+      componentCount++;
+      var componentSize = 0;
+      final stack = <int>[node.id];
+
+      while (stack.isNotEmpty) {
+        final current = stack.removeLast();
+        if (!visited.add(current)) continue;
+        componentSize++;
+        for (final neighbor in adjacency[current] ?? const <int>{}) {
+          if (!visited.contains(neighbor)) {
+            stack.add(neighbor);
+          }
+        }
+      }
+
+      if (componentSize > largestComponentNodeCount) {
+        largestComponentNodeCount = componentSize;
+      }
+    }
+
+    return _ComponentStats(
+      componentCount: componentCount,
+      largestComponentNodeCount: largestComponentNodeCount,
+    );
+  }
+}

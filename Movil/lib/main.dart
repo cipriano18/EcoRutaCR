@@ -1,9 +1,10 @@
-import 'package:ecoruta/providers/user_provider.dart';
+import 'package:ecoruta/core/providers/location_provider.dart';
+import 'package:ecoruta/features/profile/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'routes/app_routes.dart';
-import 'screens/startup/app_bootstrap_screen.dart';
+import 'package:ecoruta/core/routes/app_routes.dart';
+import 'package:ecoruta/core/routes/screens/app_bootstrap_screen.dart';
 
 /// Inicializa Firebase y registra los providers globales de la app.
 Future<void> main() async {
@@ -11,7 +12,10 @@ Future<void> main() async {
 
   runApp(
     MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => UserProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+      ],
       child: const EcoRutaApp(),
     ),
   );
@@ -40,4 +44,3 @@ class EcoRutaApp extends StatelessWidget {
     );
   }
 }
-

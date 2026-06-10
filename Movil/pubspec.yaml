@@ -71,6 +71,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
+    - assets/data/costa_rica_locations.json
     - assets/videos/welcome.mp4
     - assets/images/welcome.png
     - assets/images/avatars/
