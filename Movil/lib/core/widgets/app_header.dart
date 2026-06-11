@@ -158,7 +158,12 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.eco_rounded, color: _primaryFixed, size: 22),
+          Image.asset(
+            'assets/images/logo/logo verde.png',
+            width: 24,
+            height: 24,
+            fit: BoxFit.contain,
+          ),
           const SizedBox(width: 6),
           Text(
             title,

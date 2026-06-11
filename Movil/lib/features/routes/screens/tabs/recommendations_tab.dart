@@ -1,14 +1,13 @@
-import 'package:ecoruta/data/costa_rica_locations.dart';
+import 'package:ecoruta/features/profile/providers/user_provider.dart';
 import 'package:ecoruta/features/routes/models/route_profile.dart';
 import 'package:ecoruta/features/routes/models/stored_route.dart';
-import 'package:ecoruta/features/profile/providers/user_provider.dart';
 import 'package:ecoruta/features/routes/screens/route_preview_screen.dart';
 import 'package:ecoruta/features/routes/services/recommendations_service.dart';
 import 'package:ecoruta/features/routes/services/routing/route_result.dart';
 import 'package:ecoruta/features/routes/services/saved_routes_service.dart';
 import 'package:ecoruta/core/widgets/confirm_dialog.dart';
-import 'package:ecoruta/features/routes/widgets/route_result_card.dart';
 import 'package:ecoruta/core/widgets/suggestion_item.dart';
+import 'package:ecoruta/features/routes/widgets/route_result_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,7 +21,6 @@ class RecommendationsTab extends StatefulWidget {
 class _RecommendationsTabState extends State<RecommendationsTab> {
   static const _primaryColor = Color(0xFF012D1D);
   static const _surfaceHighest = Color(0xFFE1E3E4);
-  static const _tertiaryFixed = Color(0xFFFFB59F);
   static const _textMuted = Color(0xFF414844);
   static const _borderSoft = Color(0xFFD8DDDA);
 
@@ -31,20 +29,16 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
       RecommendationsService();
   final SavedRoutesService _savedRoutesService = SavedRoutesService();
 
-  String? _selectedZoneLabel;
+  String? _appliedZoneFilter;
   String _zoneQuery = '';
   bool _isLoading = false;
   bool _isSaving = false;
   String? _errorMessage;
-  int _candidateCount = 0;
-  int _savedRouteCount = 0;
-  late final List<_ZoneOption> _allZones;
   List<_RecommendationCardData> _recommendations = const [];
 
   @override
   void initState() {
     super.initState();
-    _allZones = _buildZoneOptions();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _loadRecommendations();
@@ -77,7 +71,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Sugerencias inteligentes según tu perfil, tus rutas guardadas y la zona que quieras explorar.',
+          'Rutas sugeridas para ti según tu perfil y las rutas que ya has guardado.',
           style: TextStyle(
             fontSize: 14,
             color: Colors.grey.shade700,
@@ -85,21 +79,19 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 22),
-        _buildSearchField(),
+        const SizedBox(height: 28),
+        _buildSearchControls(),
         if (zoneSuggestions.isNotEmpty) ...[
           const SizedBox(height: 10),
           ...zoneSuggestions.map(
             (zone) => SuggestionItem(
-              title: zone.title,
-              subtitle: zone.subtitle,
-              onTap: () => _selectZone(zone.label),
+              title: zone,
+              subtitle: 'Disponible en estas recomendaciones',
+              onTap: () => _applyZoneFilter(zone),
             ),
           ),
         ],
-        const SizedBox(height: 28),
-        _buildIntroPanel(),
-        const SizedBox(height: 28),
+        const SizedBox(height: 18),
         Text(
           _resultsSummary(visibleRecommendations.length),
           style: const TextStyle(
@@ -155,24 +147,35 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
     );
   }
 
+  Widget _buildSearchControls() {
+    return Row(
+      children: [
+        Expanded(child: _buildSearchField()),
+        const SizedBox(width: 12),
+        _buildRefreshButton(),
+      ],
+    );
+  }
+
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
       onChanged: (value) => setState(() => _zoneQuery = value),
+      onSubmitted: _applyZoneFilter,
       decoration: InputDecoration(
-        hintText: 'Buscar por zona',
+        hintText: 'Filtrar por destino',
         hintStyle: const TextStyle(
           color: _textMuted,
           fontWeight: FontWeight.w500,
         ),
         prefixIcon: const Icon(Icons.location_on_rounded, color: _textMuted),
-        suffixIcon: (_zoneQuery.isNotEmpty || _selectedZoneLabel != null)
+        suffixIcon: (_zoneQuery.isNotEmpty || _appliedZoneFilter != null)
             ? IconButton(
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
                     _zoneQuery = '';
-                    _selectedZoneLabel = null;
+                    _appliedZoneFilter = null;
                   });
                 },
                 icon: const Icon(Icons.close_rounded, color: _textMuted),
@@ -200,82 +203,30 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
     );
   }
 
-  Widget _buildIntroPanel() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+  Widget _buildRefreshButton() {
+    return SizedBox(
+      width: 58,
+      height: 58,
+      child: FilledButton(
+        onPressed: _isLoading ? null : _reloadRecommendations,
+        style: FilledButton.styleFrom(
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: _tertiaryFixed.withValues(alpha: 0.24),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: const Text(
-              'IA PERSONALIZADA',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF852300),
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Rutas sugeridas para ti',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: _primaryColor,
-              letterSpacing: -0.6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _selectedZoneLabel == null
-                ? 'La IA cruza tus preferencias, actividad favorita y rutas guardadas para descubrir nuevas opciones.'
-                : 'Mostrando sugerencias filtradas por $_selectedZoneLabel.',
-            style: const TextStyle(
-              fontSize: 14,
-              color: _textMuted,
-              fontWeight: FontWeight.w500,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _SummaryChip(
-                icon: Icons.analytics_rounded,
-                label: '$_candidateCount candidatas',
-              ),
-              _SummaryChip(
-                icon: Icons.bookmark_rounded,
-                label: '$_savedRouteCount guardadas',
-              ),
-              if (_selectedZoneLabel != null)
-                _SummaryChip(
-                  icon: Icons.place_rounded,
-                  label: _selectedZoneLabel!,
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: Colors.white,
                 ),
-            ],
-          ),
-        ],
+              )
+            : const Icon(Icons.autorenew_rounded),
       ),
     );
   }
@@ -301,10 +252,6 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
         topK: 12,
       );
       if (!mounted) return;
-      setState(() {
-        _candidateCount = response.candidateCount;
-        _savedRouteCount = response.savedRouteCount;
-      });
 
       final publicRoutes = await _savedRoutesService.fetchPublicRoutes();
       final byId = {
@@ -335,6 +282,7 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
                   ? creatorNames[route.ownerId]!
                   : 'usuario desconocido',
               score: recommendation.score,
+              region: recommendation.region,
             ),
           );
         } catch (error, stackTrace) {
@@ -381,35 +329,48 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
     }
   }
 
-  void _selectZone(String label) {
-    _searchController.text = label;
+  void _applyZoneFilter(String value) {
+    final sanitized = value.trim();
+    _searchController.value = TextEditingValue(
+      text: sanitized,
+      selection: TextSelection.collapsed(offset: sanitized.length),
+    );
     setState(() {
-      _zoneQuery = label;
-      _selectedZoneLabel = label;
+      _zoneQuery = sanitized;
+      _appliedZoneFilter = sanitized.isEmpty ? null : sanitized;
     });
   }
 
-  List<_ZoneOption> _filteredZoneSuggestions() {
-    final query = _zoneQuery.trim().toLowerCase();
-    if (query.isEmpty || _selectedZoneLabel == _zoneQuery) {
+  void _reloadRecommendations() {
+    _searchController.clear();
+    setState(() {
+      _zoneQuery = '';
+      _appliedZoneFilter = null;
+    });
+    _loadRecommendations();
+  }
+
+  List<String> _filteredZoneSuggestions() {
+    final query = _normalizeText(_zoneQuery);
+    if (query.isEmpty) {
       return const [];
     }
 
-    return _allZones
-        .where((zone) => zone.searchText.contains(query))
+    final applied = _normalizeText(_appliedZoneFilter ?? '');
+    return _availableLocationTerms()
+        .where(
+          (term) =>
+              _normalizeText(term).contains(query) &&
+              _normalizeText(term) != applied,
+        )
         .take(5)
         .toList(growable: false);
   }
 
   List<_RecommendationCardData> _filteredRecommendations() {
-    final query = (_selectedZoneLabel ?? _zoneQuery).trim().toLowerCase();
+    final query = _normalizeText(_appliedZoneFilter ?? '');
     return _recommendations
-        .where(
-          (route) =>
-              query.isEmpty ||
-              route.route.startLabel.toLowerCase().contains(query) ||
-              route.route.endLabel.toLowerCase().contains(query),
-        )
+        .where((route) => query.isEmpty || route.matchesLocationQuery(query))
         .toList(growable: false);
   }
 
@@ -420,30 +381,44 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
     if (_isLoading) {
       return 'Consultando rutas recomendadas por IA';
     }
-    final zoneText = _selectedZoneLabel == null
-        ? 'sin filtro de zona'
-        : _selectedZoneLabel!;
-    return '$visibleCount recomendaciones visibles en $zoneText';
+    return '$visibleCount recomendaciones';
   }
 
-  List<_ZoneOption> _buildZoneOptions() {
-    return costaRicaLocations
-        .expand(
-          (province) => province.cantonDistricts.map(
-            (entry) => _ZoneOption(
-              label: '${entry.canton}, ${entry.district}',
-              title: entry.displayLabel,
-              subtitle: province.name,
-            ),
-          ),
-        )
-        .toList(growable: false);
+  List<String> _availableLocationTerms() {
+    final terms = <String>{};
+    for (final routeData in _recommendations) {
+      for (final term in routeData.locationTerms) {
+        final trimmed = term.trim();
+        if (trimmed.isNotEmpty && _normalizeText(trimmed) != 'unknown') {
+          terms.add(trimmed);
+        }
+      }
+    }
+
+    final sorted = terms.toList(growable: false)
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return sorted;
+  }
+
+  static String _normalizeText(String value) {
+    final lowered = value
+        .trim()
+        .toLowerCase()
+        .replaceAll('\u00E1', 'a')
+        .replaceAll('\u00E9', 'e')
+        .replaceAll('\u00ED', 'i')
+        .replaceAll('\u00F3', 'o')
+        .replaceAll('\u00FA', 'u')
+        .replaceAll('\u00FC', 'u')
+        .replaceAll('\u00F1', 'n');
+
+    return lowered.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   Future<void> _confirmSave(_RecommendationCardData routeData) async {
     final confirmed = await ConfirmDialog.mostrar(
       context,
-      titulo: 'Guardar ruta pública',
+      titulo: 'Guardar ruta publica',
       mensaje: 'Deseas guardar esta ruta creada por ${routeData.creatorName}?',
       textoConfirmar: 'Guardar',
     );
@@ -511,40 +486,6 @@ class _RecommendationsTabState extends State<RecommendationsTab> {
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: _RecommendationsTabState._tertiaryFixed.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(width: 2),
-          Icon(icon, size: 16, color: _RecommendationsTabState._primaryColor),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: _RecommendationsTabState._primaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _RecommendationsInfoCard extends StatelessWidget {
   const _RecommendationsInfoCard({
     required this.icon,
@@ -604,32 +545,32 @@ class _RecommendationsInfoCard extends StatelessWidget {
   }
 }
 
-class _ZoneOption {
-  const _ZoneOption({
-    required this.label,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final String label;
-  final String title;
-  final String subtitle;
-
-  String get searchText => '$label $title $subtitle'.toLowerCase();
-}
-
 class _RecommendationCardData {
   const _RecommendationCardData({
     required this.route,
     required this.routeResult,
     required this.creatorName,
     required this.score,
+    required this.region,
   });
 
   final StoredRoute route;
   final RouteResult routeResult;
   final String creatorName;
   final double score;
+  final String region;
+
+  List<String> get locationTerms => [
+    region,
+    route.startLabel,
+    route.endLabel,
+  ].where((term) => term.trim().isNotEmpty).toList(growable: false);
+
+  bool matchesLocationQuery(String query) {
+    return locationTerms.any(
+      (term) => _RecommendationsTabState._normalizeText(term).contains(query),
+    );
+  }
 
   String get matchScoreLabel {
     final normalized = ((score + 2) / 4).clamp(0, 1);

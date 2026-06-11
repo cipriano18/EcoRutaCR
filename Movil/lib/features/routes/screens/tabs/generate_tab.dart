@@ -360,8 +360,7 @@ class _GenerateTabState extends State<GenerateTab> {
               label: exploreProvider.isLoading
                   ? 'Generando rutas con IA...'
                   : 'Generar con IA',
-              hint:
-                  'Calcula una ruta corta y otra desafiante según tu actividad.',
+              hint: '',
               icon: Icons.auto_awesome_rounded,
               isLoading: exploreProvider.isLoading,
               onPressed: exploreProvider.isLoading ? null : _generateRoutes,
@@ -415,7 +414,7 @@ class _GenerateTabState extends State<GenerateTab> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Elegimos dos estilos de ruta para ayudarte a comparar rapidez y reto sin cambiar de pantalla.',
+                          'Genera rutas cortas y desafiantes según tu actividad.',
                           style: TextStyle(
                             fontSize: 13,
                             height: 1.4,
@@ -803,16 +802,18 @@ class _AiActionButton extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          hint,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
+        if (hint.trim().isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            hint,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

@@ -144,7 +144,7 @@ class _StartupLoadingView extends StatelessWidget {
                             );
                           },
                           child: Image.asset(
-                            'assets/images/avatars/icon8.png',
+                            'assets/images/logo/logo.png',
                             width: logoSize,
                             height: logoSize,
                             fit: BoxFit.contain,

@@ -71,7 +71,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.terrain, color: _primaryFixed, size: 28),
+                      Image.asset(
+                        'assets/images/logo/logo.png',
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.contain,
+                      ),
                       const SizedBox(width: 8),
                       const Text(
                         'EcoRuta',
