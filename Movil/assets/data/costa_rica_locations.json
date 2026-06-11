@@ -1,0 +1,1929 @@
+[
+  {
+    "name": "San Jose",
+    "cantonDistricts": [
+      {
+        "canton": "San Jose",
+        "district": "Carmen"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Merced"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Hospital"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Catedral"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Zapote"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Uruca"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Mata Redonda"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Pavas"
+      },
+      {
+        "canton": "San Jose",
+        "district": "Hatillo"
+      },
+      {
+        "canton": "San Jose",
+        "district": "San Sebastian"
+      },
+      {
+        "canton": "Escazu",
+        "district": "Escazu"
+      },
+      {
+        "canton": "Escazu",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Escazu",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Desamparados"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "San Miguel"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Frailes"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Patarra"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "San Cristobal"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Rosario"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Damas"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Gravilias"
+      },
+      {
+        "canton": "Desamparados",
+        "district": "Los Guido"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Santiago"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Mercedes Sur"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Barbacoas"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Grifo Alto"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Candelarita"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Desamparaditos"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Puriscal",
+        "district": "Chires"
+      },
+      {
+        "canton": "Tarrazu",
+        "district": "San Marcos"
+      },
+      {
+        "canton": "Tarrazu",
+        "district": "San Lorenzo"
+      },
+      {
+        "canton": "Tarrazu",
+        "district": "San Carlos"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Aserri"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Tarbaca"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Vuelta de Jorco"
+      },
+      {
+        "canton": "Aserri",
+        "district": "San Gabriel"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Legua"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Monterrey"
+      },
+      {
+        "canton": "Aserri",
+        "district": "Salitrillos"
+      },
+      {
+        "canton": "Mora",
+        "district": "Ciudad Colon"
+      },
+      {
+        "canton": "Mora",
+        "district": "Guayabo"
+      },
+      {
+        "canton": "Mora",
+        "district": "Tabarcia"
+      },
+      {
+        "canton": "Mora",
+        "district": "Piedras Negras"
+      },
+      {
+        "canton": "Mora",
+        "district": "Picagres"
+      },
+      {
+        "canton": "Mora",
+        "district": "Jaris"
+      },
+      {
+        "canton": "Mora",
+        "district": "Quitirrisi"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Goicoechea"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "San Francisco"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Calle Blancos"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Mata de Platano"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Ipis"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Rancho Redondo"
+      },
+      {
+        "canton": "Goicoechea",
+        "district": "Purral"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Santa Ana"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Salitral"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Pozos"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Uruca"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Piedades"
+      },
+      {
+        "canton": "Santa Ana",
+        "district": "Brasil"
+      },
+      {
+        "canton": "Alajuelita",
+        "district": "Alajuelita"
+      },
+      {
+        "canton": "Alajuelita",
+        "district": "San Josecito"
+      },
+      {
+        "canton": "Alajuelita",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Alajuelita",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "Alajuelita",
+        "district": "San Felipe"
+      },
+      {
+        "canton": "Vazquez de Coronado",
+        "district": "Cascajal"
+      },
+      {
+        "canton": "Acosta",
+        "district": "San Ignacio"
+      },
+      {
+        "canton": "Acosta",
+        "district": "Guaitil"
+      },
+      {
+        "canton": "Acosta",
+        "district": "Palmichal"
+      },
+      {
+        "canton": "Acosta",
+        "district": "Cangrejal"
+      },
+      {
+        "canton": "Acosta",
+        "district": "Sabanillas"
+      },
+      {
+        "canton": "Tibas",
+        "district": "San Juan"
+      },
+      {
+        "canton": "Tibas",
+        "district": "Cinco Esquinas"
+      },
+      {
+        "canton": "Tibas",
+        "district": "Anselmo Llorente"
+      },
+      {
+        "canton": "Tibas",
+        "district": "Leon XIII"
+      },
+      {
+        "canton": "Tibas",
+        "district": "Colima"
+      },
+      {
+        "canton": "Moravia",
+        "district": "San Vicente"
+      },
+      {
+        "canton": "Moravia",
+        "district": "San Jeronimo"
+      },
+      {
+        "canton": "Moravia",
+        "district": "La Trinidad"
+      },
+      {
+        "canton": "Montes de Oca",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Montes de Oca",
+        "district": "Sabanilla"
+      },
+      {
+        "canton": "Montes de Oca",
+        "district": "Mercedes"
+      },
+      {
+        "canton": "Montes de Oca",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Turrubares",
+        "district": "San Pablo"
+      },
+      {
+        "canton": "Turrubares",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Turrubares",
+        "district": "San Juan de Mata"
+      },
+      {
+        "canton": "Turrubares",
+        "district": "San Luis"
+      },
+      {
+        "canton": "Turrubares",
+        "district": "Carara"
+      },
+      {
+        "canton": "Dota",
+        "district": "Santa Maria"
+      },
+      {
+        "canton": "Dota",
+        "district": "Jardin"
+      },
+      {
+        "canton": "Dota",
+        "district": "Copey"
+      },
+      {
+        "canton": "Curridabat",
+        "district": "Curridabat"
+      },
+      {
+        "canton": "Curridabat",
+        "district": "Granadilla"
+      },
+      {
+        "canton": "Curridabat",
+        "district": "Sanchez"
+      },
+      {
+        "canton": "Curridabat",
+        "district": "Tirrases"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "El General"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Daniel Flores"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Rivas"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Platanares"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Pejibaye"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Cajon"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Baru"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Rio Nuevo"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "Paramo"
+      },
+      {
+        "canton": "Perez Zeledon",
+        "district": "La Amistad"
+      },
+      {
+        "canton": "Leon Cortes Castro",
+        "district": "San Pablo"
+      }
+    ]
+  },
+  {
+    "name": "Alajuela",
+    "cantonDistricts": [
+      {
+        "canton": "Alajuela",
+        "district": "Alajuela"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "San Jose"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Carrizal"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Guacima"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Sabanilla"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Rio Segundo"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Desamparados"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Turrucares"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Tambor"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Garita"
+      },
+      {
+        "canton": "Alajuela",
+        "district": "Sarapiqui"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "San Ramon"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Santiago"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "San Juan"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Piedades Norte"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Piedades Sur"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Angeles"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Alfaro"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Volio"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Zapotal"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "Penas Blancas"
+      },
+      {
+        "canton": "San Ramon",
+        "district": "San Lorenzo"
+      },
+      {
+        "canton": "Grecia",
+        "district": "Grecia"
+      },
+      {
+        "canton": "Grecia",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "Grecia",
+        "district": "San Jose"
+      },
+      {
+        "canton": "Grecia",
+        "district": "San Roque"
+      },
+      {
+        "canton": "Grecia",
+        "district": "Tacares"
+      },
+      {
+        "canton": "Grecia",
+        "district": "Puente de Piedra"
+      },
+      {
+        "canton": "Grecia",
+        "district": "Bolivar"
+      },
+      {
+        "canton": "San Mateo",
+        "district": "San Mateo"
+      },
+      {
+        "canton": "San Mateo",
+        "district": "Desmonte"
+      },
+      {
+        "canton": "San Mateo",
+        "district": "Jesus Maria"
+      },
+      {
+        "canton": "San Mateo",
+        "district": "Labrador"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Atenas"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Jesus"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Mercedes"
+      },
+      {
+        "canton": "Atenas",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "Atenas",
+        "district": "San Jose"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Santa Eulalia"
+      },
+      {
+        "canton": "Atenas",
+        "district": "Escobal"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "Naranjo"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "San Miguel"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "San Jose"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "Cirri Sur"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "San Jeronimo"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "San Juan"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "El Rosario"
+      },
+      {
+        "canton": "Naranjo",
+        "district": "Palmitos"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Palmares"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Zaragoza"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Buenos Aires"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Santiago"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Candelaria"
+      },
+      {
+        "canton": "Palmares",
+        "district": "Esquipulas"
+      },
+      {
+        "canton": "Palmares",
+        "district": "La Granja"
+      },
+      {
+        "canton": "Poas",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Poas",
+        "district": "San Juan"
+      },
+      {
+        "canton": "Poas",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Poas",
+        "district": "Carrillos"
+      },
+      {
+        "canton": "Poas",
+        "district": "Sabana Redonda"
+      },
+      {
+        "canton": "Orotina",
+        "district": "Orotina"
+      },
+      {
+        "canton": "Orotina",
+        "district": "Mastate"
+      },
+      {
+        "canton": "Orotina",
+        "district": "Hacienda Vieja"
+      },
+      {
+        "canton": "Orotina",
+        "district": "Coyolar"
+      },
+      {
+        "canton": "Orotina",
+        "district": "La Ceiba"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Quesada"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Florencia"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Buenavista"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Aguas Zarcas"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Venecia"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Pital"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "La Fortuna"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "La Tigra"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "La Palmera"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Venado"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Cutris"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Monterrey"
+      },
+      {
+        "canton": "San Carlos",
+        "district": "Pocosol"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Zarcero"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Laguna"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Tapezco"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Guadalupe"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Palmira"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Zapote"
+      },
+      {
+        "canton": "Zarcero",
+        "district": "Brisas"
+      },
+      {
+        "canton": "Sarchi",
+        "district": "Sarchi Norte"
+      },
+      {
+        "canton": "Sarchi",
+        "district": "Sarchi Sur"
+      },
+      {
+        "canton": "Sarchi",
+        "district": "Toro Amarillo"
+      },
+      {
+        "canton": "Sarchi",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Sarchi",
+        "district": "Rodriguez"
+      },
+      {
+        "canton": "Upala",
+        "district": "Upala"
+      },
+      {
+        "canton": "Upala",
+        "district": "Aguas Claras"
+      },
+      {
+        "canton": "Upala",
+        "district": "San Jose (Pizote)"
+      },
+      {
+        "canton": "Upala",
+        "district": "Bijagua"
+      },
+      {
+        "canton": "Upala",
+        "district": "Delicias"
+      },
+      {
+        "canton": "Upala",
+        "district": "Dos Rios"
+      },
+      {
+        "canton": "Upala",
+        "district": "Yolillal"
+      },
+      {
+        "canton": "Upala",
+        "district": "Canalete"
+      },
+      {
+        "canton": "Los Chiles",
+        "district": "Los Chiles"
+      },
+      {
+        "canton": "Los Chiles",
+        "district": "Cano Negro"
+      },
+      {
+        "canton": "Los Chiles",
+        "district": "El Amparo"
+      },
+      {
+        "canton": "Los Chiles",
+        "district": "San Jorge"
+      },
+      {
+        "canton": "Guatuso",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Guatuso",
+        "district": "Buenavista"
+      },
+      {
+        "canton": "Guatuso",
+        "district": "Cote"
+      },
+      {
+        "canton": "Guatuso",
+        "district": "Katira"
+      },
+      {
+        "canton": "Rio Cuarto",
+        "district": "Rio Cuarto"
+      },
+      {
+        "canton": "Rio Cuarto",
+        "district": "Santa Rita"
+      },
+      {
+        "canton": "Rio Cuarto",
+        "district": "Santa Isabel"
+      }
+    ]
+  },
+  {
+    "name": "Cartago",
+    "cantonDistricts": [
+      {
+        "canton": "Cartago",
+        "district": "Cartago"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Occidental"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Carmen"
+      },
+      {
+        "canton": "Cartago",
+        "district": "San Nicolas"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Aguacaliente"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Guadalupe o Arenilla"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Corralillo"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Tierra Blanca"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Dulce Nombre"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Llano Grande"
+      },
+      {
+        "canton": "Cartago",
+        "district": "Quebradilla"
+      },
+      {
+        "canton": "Paraiso",
+        "district": "Paraiso"
+      },
+      {
+        "canton": "Paraiso",
+        "district": "Santiago"
+      },
+      {
+        "canton": "Paraiso",
+        "district": "Orosi"
+      },
+      {
+        "canton": "Paraiso",
+        "district": "Cachi"
+      },
+      {
+        "canton": "Paraiso",
+        "district": "Birrisito"
+      },
+      {
+        "canton": "La Union",
+        "district": "Tres Rios"
+      },
+      {
+        "canton": "La Union",
+        "district": "San Diego"
+      },
+      {
+        "canton": "La Union",
+        "district": "San Juan"
+      },
+      {
+        "canton": "La Union",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "La Union",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "La Union",
+        "district": "Dulce Nombre"
+      },
+      {
+        "canton": "La Union",
+        "district": "San Ramon"
+      },
+      {
+        "canton": "La Union",
+        "district": "Rio Azul"
+      },
+      {
+        "canton": "Jimenez",
+        "district": "Juan Vinas"
+      },
+      {
+        "canton": "Jimenez",
+        "district": "Tucurrique"
+      },
+      {
+        "canton": "Jimenez",
+        "district": "Pejibaye"
+      },
+      {
+        "canton": "Jimenez",
+        "district": "La Victoria"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Turrialba"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "La Suiza"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Peralta"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Santa Cruz"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Santa Teresita"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Pavones"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Tuis"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Tayutic"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Santa Rosa"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Tres Equis"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "La Isabel"
+      },
+      {
+        "canton": "Turrialba",
+        "district": "Chirripo"
+      },
+      {
+        "canton": "Alvarado",
+        "district": "Pacayas"
+      },
+      {
+        "canton": "Alvarado",
+        "district": "Cervantes"
+      },
+      {
+        "canton": "Alvarado",
+        "district": "Capellades"
+      },
+      {
+        "canton": "Oreamuno",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Oreamuno",
+        "district": "Cot"
+      },
+      {
+        "canton": "Oreamuno",
+        "district": "Potrero Cerrado"
+      },
+      {
+        "canton": "Oreamuno",
+        "district": "Cipreses"
+      },
+      {
+        "canton": "Oreamuno",
+        "district": "Santa Rosa"
+      },
+      {
+        "canton": "El Guarco",
+        "district": "El Tejar"
+      },
+      {
+        "canton": "El Guarco",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "El Guarco",
+        "district": "Tobosi"
+      },
+      {
+        "canton": "El Guarco",
+        "district": "Patio de Agua"
+      }
+    ]
+  },
+  {
+    "name": "Heredia",
+    "cantonDistricts": [
+      {
+        "canton": "Heredia",
+        "district": "Heredia"
+      },
+      {
+        "canton": "Heredia",
+        "district": "Mercedes"
+      },
+      {
+        "canton": "Heredia",
+        "district": "San Francisco"
+      },
+      {
+        "canton": "Heredia",
+        "district": "Ulloa"
+      },
+      {
+        "canton": "Heredia",
+        "district": "Vara Blanca"
+      },
+      {
+        "canton": "Barva",
+        "district": "Barva"
+      },
+      {
+        "canton": "Barva",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Barva",
+        "district": "San Pablo"
+      },
+      {
+        "canton": "Barva",
+        "district": "San Roque"
+      },
+      {
+        "canton": "Barva",
+        "district": "Santa Lucia"
+      },
+      {
+        "canton": "Barva",
+        "district": "San Jose de la Montana"
+      },
+      {
+        "canton": "Barva",
+        "district": "Puente Salas"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Santo Domingo"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "San Vicente"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "San Miguel"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Paracito"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Santo Tomas"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Santa Rosa"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Tures"
+      },
+      {
+        "canton": "Santo Domingo",
+        "district": "Para"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "Santa Barbara"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "San Pedro"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "San Juan"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "Jesus"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "Santo Domingo"
+      },
+      {
+        "canton": "Santa Barbara",
+        "district": "Puraba"
+      },
+      {
+        "canton": "San Rafael",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "San Rafael",
+        "district": "San Josecito"
+      },
+      {
+        "canton": "San Rafael",
+        "district": "Santiago"
+      },
+      {
+        "canton": "San Rafael",
+        "district": "Angeles"
+      },
+      {
+        "canton": "San Rafael",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "San Isidro",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "San Isidro",
+        "district": "San Jose"
+      },
+      {
+        "canton": "San Isidro",
+        "district": "Concepcion"
+      },
+      {
+        "canton": "San Isidro",
+        "district": "San Francisco"
+      },
+      {
+        "canton": "Belen",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Belen",
+        "district": "La Ribera"
+      },
+      {
+        "canton": "Belen",
+        "district": "La Asuncion"
+      },
+      {
+        "canton": "Flores",
+        "district": "San Joaquin"
+      },
+      {
+        "canton": "Flores",
+        "district": "Barrantes"
+      },
+      {
+        "canton": "Flores",
+        "district": "Llorente"
+      },
+      {
+        "canton": "San Pablo",
+        "district": "San Pablo"
+      },
+      {
+        "canton": "Sarapiqui",
+        "district": "Puerto Viejo"
+      },
+      {
+        "canton": "Sarapiqui",
+        "district": "La Virgen"
+      },
+      {
+        "canton": "Sarapiqui",
+        "district": "Horquetas"
+      },
+      {
+        "canton": "Sarapiqui",
+        "district": "Curena"
+      }
+    ]
+  },
+  {
+    "name": "Guanacaste",
+    "cantonDistricts": [
+      {
+        "canton": "Liberia",
+        "district": "Liberia"
+      },
+      {
+        "canton": "Liberia",
+        "district": "Canas Dulces"
+      },
+      {
+        "canton": "Liberia",
+        "district": "Mayorga"
+      },
+      {
+        "canton": "Liberia",
+        "district": "Nacascolo"
+      },
+      {
+        "canton": "Liberia",
+        "district": "Curubande"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Nicoya"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Mansion"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "San Antonio"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Quebrada Honda"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Samara"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Nosara"
+      },
+      {
+        "canton": "Nicoya",
+        "district": "Belen de Nosarita"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Santa Cruz"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Bolson"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Tempate"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Cartagena"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Cuajiniquil"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Diria"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Cabo Velas"
+      },
+      {
+        "canton": "Santa Cruz",
+        "district": "Tamarindo"
+      },
+      {
+        "canton": "Bagaces",
+        "district": "Bagaces"
+      },
+      {
+        "canton": "Bagaces",
+        "district": "La Fortuna"
+      },
+      {
+        "canton": "Bagaces",
+        "district": "Mogote"
+      },
+      {
+        "canton": "Bagaces",
+        "district": "Rio Naranjo"
+      },
+      {
+        "canton": "Carrillo",
+        "district": "Filadelfia"
+      },
+      {
+        "canton": "Carrillo",
+        "district": "Palmira"
+      },
+      {
+        "canton": "Carrillo",
+        "district": "Sardinal"
+      },
+      {
+        "canton": "Carrillo",
+        "district": "Belen"
+      },
+      {
+        "canton": "Canas",
+        "district": "Canas"
+      },
+      {
+        "canton": "Canas",
+        "district": "Palmira"
+      },
+      {
+        "canton": "Canas",
+        "district": "San Miguel"
+      },
+      {
+        "canton": "Canas",
+        "district": "Bebedero"
+      },
+      {
+        "canton": "Canas",
+        "district": "Porozal"
+      },
+      {
+        "canton": "Abangares",
+        "district": "Las Juntas"
+      },
+      {
+        "canton": "Abangares",
+        "district": "Sierra"
+      },
+      {
+        "canton": "Abangares",
+        "district": "San Juan"
+      },
+      {
+        "canton": "Abangares",
+        "district": "Colorado"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Tilaran"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Quebrada Grande"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Tronadora"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Santa Rosa"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Libano"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Tierras Morenas"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Arenal"
+      },
+      {
+        "canton": "Tilaran",
+        "district": "Cabeceras"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "Carmona"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "Santa Rita"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "Zapotal"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "San Pablo"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "Porvenir"
+      },
+      {
+        "canton": "Nandayure",
+        "district": "Bejuco"
+      },
+      {
+        "canton": "La Cruz",
+        "district": "La Cruz"
+      },
+      {
+        "canton": "La Cruz",
+        "district": "Santa Cecilia"
+      },
+      {
+        "canton": "La Cruz",
+        "district": "La Garita"
+      },
+      {
+        "canton": "La Cruz",
+        "district": "Santa Elena"
+      },
+      {
+        "canton": "Hojancha",
+        "district": "Hojancha"
+      },
+      {
+        "canton": "Hojancha",
+        "district": "Monte Romo"
+      },
+      {
+        "canton": "Hojancha",
+        "district": "Puerto Carrillo"
+      },
+      {
+        "canton": "Hojancha",
+        "district": "Huacas"
+      },
+      {
+        "canton": "Hojancha",
+        "district": "Matambu"
+      }
+    ]
+  },
+  {
+    "name": "Puntarenas",
+    "cantonDistricts": [
+      {
+        "canton": "Puntarenas",
+        "district": "Puntarenas"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Pitahaya"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Chomes"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Lepanto"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Paquera"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Manzanillo"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Guacimal"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Barranca"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Isla del Coco"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Cobano"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Chacarita"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Chira"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Acapulco"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "El Roble"
+      },
+      {
+        "canton": "Puntarenas",
+        "district": "Arancibia"
+      },
+      {
+        "canton": "Esparza",
+        "district": "Espiritu Santo"
+      },
+      {
+        "canton": "Esparza",
+        "district": "San Juan Grande"
+      },
+      {
+        "canton": "Esparza",
+        "district": "Macacona"
+      },
+      {
+        "canton": "Esparza",
+        "district": "San Rafael"
+      },
+      {
+        "canton": "Esparza",
+        "district": "San Jeronimo"
+      },
+      {
+        "canton": "Esparza",
+        "district": "Caldera"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Buenos Aires"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Volcan"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Potrero Grande"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Boruca"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Pilas"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Colinas"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Changuena"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Biolley"
+      },
+      {
+        "canton": "Buenos Aires",
+        "district": "Brunka"
+      },
+      {
+        "canton": "Montes de Oro",
+        "district": "Miramar"
+      },
+      {
+        "canton": "Montes de Oro",
+        "district": "La Union"
+      },
+      {
+        "canton": "Montes de Oro",
+        "district": "San Isidro"
+      },
+      {
+        "canton": "Osa",
+        "district": "Ciudad Cortes"
+      },
+      {
+        "canton": "Osa",
+        "district": "Palmar"
+      },
+      {
+        "canton": "Osa",
+        "district": "Sierpe"
+      },
+      {
+        "canton": "Osa",
+        "district": "Bahia Ballena"
+      },
+      {
+        "canton": "Osa",
+        "district": "Piedras Blancas"
+      },
+      {
+        "canton": "Osa",
+        "district": "Bahia Drake"
+      },
+      {
+        "canton": "Quepos",
+        "district": "Quepos"
+      },
+      {
+        "canton": "Quepos",
+        "district": "Savegre"
+      },
+      {
+        "canton": "Quepos",
+        "district": "Naranjito"
+      },
+      {
+        "canton": "Golfito",
+        "district": "Golfito"
+      },
+      {
+        "canton": "Golfito",
+        "district": "Guaycara"
+      },
+      {
+        "canton": "Golfito",
+        "district": "Pavon"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "San Vito"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "Sabalito"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "Aguabuena"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "Limoncito"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "Pittier"
+      },
+      {
+        "canton": "Coto Brus",
+        "district": "Gutierrez Brown"
+      },
+      {
+        "canton": "Parrita",
+        "district": "Parrita"
+      },
+      {
+        "canton": "Corredores",
+        "district": "Corredor"
+      },
+      {
+        "canton": "Corredores",
+        "district": "La Cuesta"
+      },
+      {
+        "canton": "Corredores",
+        "district": "Paso Canoas"
+      },
+      {
+        "canton": "Corredores",
+        "district": "Laurel"
+      },
+      {
+        "canton": "Garabito",
+        "district": "Jaco"
+      },
+      {
+        "canton": "Garabito",
+        "district": "Tarcoles"
+      },
+      {
+        "canton": "Garabito",
+        "district": "Lagunillas"
+      },
+      {
+        "canton": "Monteverde",
+        "district": "Monteverde"
+      }
+    ]
+  },
+  {
+    "name": "Limon",
+    "cantonDistricts": [
+      {
+        "canton": "Limon",
+        "district": "Limon"
+      },
+      {
+        "canton": "Limon",
+        "district": "Valle La Estrella"
+      },
+      {
+        "canton": "Limon",
+        "district": "Rio Blanco"
+      },
+      {
+        "canton": "Limon",
+        "district": "Matama"
+      },
+      {
+        "canton": "Pococi",
+        "district": "Guapiles"
+      },
+      {
+        "canton": "Pococi",
+        "district": "Jimenez"
+      },
+      {
+        "canton": "Pococi",
+        "district": "La Rita"
+      },
+      {
+        "canton": "Pococi",
+        "district": "Roxana"
+      },
+      {
+        "canton": "Pococi",
+        "district": "Cariari"
+      },
+      {
+        "canton": "Pococi",
+        "district": "Colorado"
+      },
+      {
+        "canton": "Pococi",
+        "district": "La Colonia"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Siquirres"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Pacuarito"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Florida"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Germania"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Cairo"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Alegria"
+      },
+      {
+        "canton": "Siquirres",
+        "district": "Reventazon"
+      },
+      {
+        "canton": "Talamanca",
+        "district": "Bratsi"
+      },
+      {
+        "canton": "Talamanca",
+        "district": "Sixaola"
+      },
+      {
+        "canton": "Talamanca",
+        "district": "Cahuita"
+      },
+      {
+        "canton": "Talamanca",
+        "district": "Telire"
+      },
+      {
+        "canton": "Matina",
+        "district": "Matina"
+      },
+      {
+        "canton": "Matina",
+        "district": "Batan"
+      },
+      {
+        "canton": "Matina",
+        "district": "Carrandi"
+      },
+      {
+        "canton": "Guacimo",
+        "district": "Guacimo"
+      },
+      {
+        "canton": "Guacimo",
+        "district": "Mercedes"
+      },
+      {
+        "canton": "Guacimo",
+        "district": "Pocora"
+      },
+      {
+        "canton": "Guacimo",
+        "district": "Rio Jimenez"
+      },
+      {
+        "canton": "Guacimo",
+        "district": "Duacari"
+      }
+    ]
+  }
+]
