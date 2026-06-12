@@ -409,7 +409,7 @@ class MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Necesitamos tu ubicacion actual para iniciar la ruta.',
+            'Necesitamos tu ubicación actual para iniciar la ruta.',
           ),
         ),
       );
@@ -447,7 +447,7 @@ class MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Aproximese un poco mas para poder comenzar la ruta. Te faltan ${_formatMeters(_distanceToGuidedStartMeters)}.',
+            'Aproxímese un poco mas para poder comenzar la ruta. Te faltan ${_formatMeters(_distanceToGuidedStartMeters)}.',
           ),
         ),
       );
@@ -487,7 +487,7 @@ class MapScreenState extends State<MapScreen> {
         context,
         titulo: 'Terminar sin completar',
         mensaje:
-            'Todavia no estas cerca del destino. Si terminas ahora, esta sesion no se registrara como ruta completada en tu perfil.',
+            'Todavía no estas cerca del destino. Si terminas ahora, esta sesión no se registrara como ruta completada en tu perfil.',
         textoConfirmar: 'Terminar de todos modos',
       );
       if (!shouldEndWithoutCompletion || !mounted) return;
@@ -495,7 +495,7 @@ class MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'La sesion se cerro sin marcarse como ruta completada.',
+            'La sesión se cerro sin marcarse como ruta completada.',
           ),
         ),
       );
@@ -941,7 +941,7 @@ class MapScreenState extends State<MapScreen> {
       case _MapMode.guidedReadyToApproachStart:
         return _isWithinGuidedStartRange
             ? 'Listo para comenzar'
-            : 'Acercate al inicio';
+            : 'Acércate al inicio';
       case _MapMode.guidedReadyToFinish:
         return 'Listo para terminar';
       case _MapMode.guidedActive:
@@ -958,12 +958,12 @@ class MapScreenState extends State<MapScreen> {
     switch (_mode) {
       case _MapMode.guidedReadyToApproachStart:
         return _isWithinGuidedStartRange
-            ? 'Ya estas dentro del rango de inicio. Pulsa comenzar para registrar esta ejecucion.'
+            ? 'Ya estas dentro del rango de inicio. Pulsa comenzar para registrar esta ejecución.'
             : 'Ve hasta ${route.startLabel} para habilitar el comienzo de esta ruta guardada.';
       case _MapMode.guidedActive:
-        return 'La ruta ya esta en progreso. Sigue el trazado y acercate a ${route.endLabel} para poder finalizar.';
+        return 'La ruta ya esta en progreso. Sigue el trazado y acércate a ${route.endLabel} para poder finalizar.';
       case _MapMode.guidedReadyToFinish:
-        return 'Ya estas cerca del destino. Pulsa terminar para guardar esta ejecucion como una sesion completada.';
+        return 'Ya estas cerca del destino. Pulsa terminar para guardar esta ejecución como una sesión completada.';
       case _MapMode.idle:
       case _MapMode.freeRecording:
         return '';

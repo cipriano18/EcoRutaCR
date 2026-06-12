@@ -21,7 +21,6 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   });
 
   static const _primaryColor = Color(0xFF012D1D);
-  static const _primaryFixed = Color(0xFFC1ECD4);
   static const _surfaceColor = Color(0xFFF8F9FA);
   static const _textMuted = Color(0xFF5E6762);
 
@@ -38,10 +37,10 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   Future<void> _handleLogout(BuildContext context) async {
     final shouldLogout = await ConfirmDialog.mostrar(
       context,
-      titulo: 'Cerrar sesion',
+      titulo: 'Cerrar sesión',
       mensaje:
-          'Estas seguro de que quieres cerrar tu sesion actual en EcoRuta?',
-      textoConfirmar: 'Cerrar sesion',
+          'Estas seguro de que quieres cerrar tu sesión actual en EcoRuta?',
+      textoConfirmar: 'Cerrar sesión',
     );
 
     if (!shouldLogout || !context.mounted) return;
@@ -112,7 +111,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Gestiona tu sesion actual',
+                  'Gestiona tu sesión actual',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -142,7 +141,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Cerrar sesion',
+                      'Cerrar sesión',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         color: Color(0xFFBA1A1A),
